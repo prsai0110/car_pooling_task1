@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RideVogue – Premium Carpooling</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ===== RESET & BASE ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c9a84c;--gold-dark:#a07030;--gold-light:#f7e9c4;
+  --bg:#faf8f5;--surface:#fff;--surface2:#f4f0eb;--surface3:#ede8df;
+  --text:#1a1410;--text-muted:#7a7060;--text-faint:#b0a898;
+  --border:#e8e2d8;--card:#fff;
+  --green:#1a7a4a;--green-bg:#e6f7ef;
+  --red:#b02020;--red-bg:#fde8e8;
+  --nav-h:64px;
+}
+.dark{
+  --bg:#0d0d0d;--surface:#161616;--surface2:#1e1e1e;--surface3:#252525;
+  --text:#f0ece4;--text-muted:#888880;--text-faint:#555550;
+  --border:#2a2a2a;--card:#1a1a1a;--gold-light:#3d2e0e;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;min-height:100vh}
+h1,h2,h3,h4{font-family:'Playfair Display',serif}
+img{display:block}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;outline:none}
+input,select,textarea{font-family:'DM Sans',sans-serif;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)!important}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:99px}
+a{color:var(--gold);text-decoration:none}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes slideRight{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+@keyframes notifIn{from{opacity:0;transform:translateX(120px)}to{opacity:1;transform:translateX(0)}}
+.fade-up{animation:fadeUp .55s cubic-bezier(.22,1,.36,1) both}
+.fade-up-d1{animation-delay:.1s}.fade-up-d2{animation-delay:.2s}.fade-up-d3{animation-delay:.3s}.fade-up-d4{animation-delay:.4s}
+.fade-in{animation:fadeIn .4s ease both}
+
+/* ===== LAYOUT ===== */
+.page{display:none}.page.active{display:block}
+.container{max-width:1160px;margin:0 auto;padding:0 2rem}
+.section{padding:5rem 0}
+
+/* ===== NAV ===== */
+nav{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;height:var(--nav-h)}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:100%;padding:0 2rem}
+.brand{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--gold);cursor:pointer;letter-spacing:.02em}
+.brand span{color:var(--text)}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{font-size:14px;font-weight:500;color:var(--text-muted);cursor:pointer;padding:6px 12px;border-radius:8px;transition:all .2s;border-bottom:2px solid transparent;background:none;border:none}
+.nav-link:hover,.nav-link.active{color:var(--gold)}
+.nav-link.active{border-bottom:2px solid var(--gold);border-radius:0}
+.nav-right{display:flex;align-items:center;gap:12px}
+.avatar-sm{width:36px;height:36px;border-radius:50%;background:var(--gold-dark);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+.dark-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:16px;cursor:pointer;transition:all .2s}
+.dark-toggle:hover{background:var(--surface3)}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 28px;border-radius:10px;font-weight:600;font-size:15px;transition:all .2s;cursor:pointer;border:none;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transition:left .5s}
+.btn:hover::after{left:140%}
+.btn-primary{background:var(--gold);color:#fff}
+.btn-primary:hover{background:var(--gold-dark);transform:translateY(-2px)}
+.btn-outline{background:transparent;border:1.5px solid var(--gold);color:var(--gold)}
+.btn-outline:hover{background:var(--gold-light);transform:translateY(-2px)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surface3)}
+.btn-sm{padding:8px 18px;font-size:13px;border-radius:8px}
+.btn-danger{background:#fee2e2;color:#b02020;border:1px solid #fecaca}
+.btn:active{transform:scale(.97)!important}
+.btn-full{width:100%}
+
+/* ===== FORM ELEMENTS ===== */
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.form-input{width:100%;padding:13px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:14px;transition:border-color .2s}
+.form-input:hover{border-color:var(--text-faint)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+
+.modal{position:fixed;inset:0;background:rgba(10,10,10,.55);display:none;place-items:center;z-index:1000;padding:18px}
+.modal-content{background:var(--surface);border-radius:24px;max-width:520px;width:100%;padding:28px;box-shadow:0 28px 80px rgba(0,0,0,.18);border:1px solid var(--border)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.close-btn{background:transparent;border:none;color:var(--text);font-size:20px;cursor:pointer}
+.modal-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
+
+/* ===== CARDS ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:all .25s}
+.card:hover{box-shadow:0 12px 40px rgba(0,0,0,.1)}
+.card-hover{cursor:pointer}
+.card-hover:hover{transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.12)}
+.card-gold{border-left:3px solid var(--gold)}
+
+/* ===== BADGES ===== */
+.badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.badge-gold{background:var(--gold-light);color:var(--gold-dark)}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-purple{background:#f0e8ff;color:#6030b0}
+.badge-blue{background:#e6f0ff;color:#2040b0}
+
+/* ===== NOTIFICATION ===== */
+#notification{position:fixed;top:80px;right:24px;z-index:999;padding:14px 22px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 8px 32px rgba(0,0,0,.15);animation:notifIn .3s ease;display:none;max-width:360px}
+#notification.show{display:block}
+#notification.success{background:#dcfce7;color:#166534}
+#notification.error{background:#fee2e2;color:#991b1b}
+#notification.info{background:#dbeafe;color:#1e40af}
+
+/* ===== STARS ===== */
+.stars{color:var(--gold);font-size:13px;letter-spacing:1px}
+
+/* ===== HERO ===== */
+.hero{background:linear-gradient(135deg,#0f0d08 0%,#2a1f0a 45%,#0f0d08 100%);padding:7rem 2rem 6rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 50%,rgba(201,168,76,.12) 0%,transparent 55%),radial-gradient(circle at 80% 30%,rgba(201,168,76,.07) 0%,transparent 40%);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.hero-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:6px 18px;margin-bottom:24px}
+.hero-chip-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
+.hero-chip-text{font-size:12px;color:var(--gold);font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+.hero-title{font-size:clamp(2.4rem,5vw,3.8rem);font-weight:900;color:#f0ece4;line-height:1.08;margin-bottom:20px}
+.hero-title span{color:var(--gold)}
+.hero-subtitle{color:#a09880;font-size:17px;line-height:1.7;margin-bottom:36px;max-width:460px}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:44px}
+.hero-stat-row{display:flex;gap:32px}
+.hero-stat-val{color:#f0ece4;font-weight:700;font-size:19px}
+.hero-stat-label{color:#a09880;font-size:12px;margin-top:2px}
+.hero-search-box{background:rgba(255,255,255,.05);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:2rem}
+.hero-search-box .form-input{background:rgba(255,255,255,.08);border-color:rgba(201,168,76,.2);color:#f0ece4}
+.hero-search-box .form-input::placeholder{color:rgba(201,168,76,.4)}
+.hero-search-box .form-label{color:rgba(201,168,76,.7)}
+.hero-search-title{font-family:'Playfair Display',serif;font-size:21px;color:#f0ece4;margin-bottom:20px}
+
+/* ===== STATS BAR ===== */
+.stats-bar{background:var(--surface2);padding:3rem 2rem;border-bottom:1px solid var(--border)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:900px;margin:0 auto;text-align:center}
+.stat-val{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.5rem);font-weight:700;color:var(--gold)}
+.stat-label{color:var(--text-muted);font-size:13px;margin-top:4px;font-weight:500}
+
+/* ===== FEATURES ===== */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:24px}
+.feature-card{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:1.8rem 1.5rem;text-align:center;transition:all .25s;cursor:default}
+.feature-card:hover{transform:translateY(-5px);box-shadow:0 16px 40px rgba(0,0,0,.1);background:var(--surface)}
+.feature-icon{font-size:40px;margin-bottom:16px}
+.feature-title{font-weight:700;font-size:17px;margin-bottom:8px}
+.feature-desc{color:var(--text-muted);font-size:14px;line-height:1.65}
+
+/* ===== RIDE CARDS ===== */
+.rides-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px}
+.ride-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.4rem;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.ride-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-dark));transform:scaleX(0);transition:transform .3s;transform-origin:left}
+.ride-card:hover::before{transform:scaleX(1)}
+.ride-card:hover{transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.12)}
+.ride-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.driver-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+.driver-name{font-weight:600;font-size:15px}
+.driver-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+.ride-route{display:flex;align-items:center;gap:10px;margin:14px 0;padding:14px;background:var(--surface2);border-radius:10px}
+.route-city{font-weight:700;font-size:15px}
+.route-arrow{color:var(--text-faint);font-size:18px;flex:1;text-align:center}
+.ride-meta-row{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap}
+.ride-meta-item{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-muted)}
+.ride-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.ride-price{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold)}
+.ride-price span{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-muted);font-weight:400}
+.seats-dots{display:flex;gap:4px}
+.seat-dot{width:9px;height:9px;border-radius:50%;background:var(--gold)}
+.seat-dot.empty{background:var(--border)}
+
+/* ===== SEARCH PAGE ===== */
+.search-header{background:var(--surface2);padding:2.5rem 2rem;border-bottom:1px solid var(--border)}
+.search-bar{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.5rem;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;max-width:900px;margin:0 auto}
+.search-divider{width:1px;background:var(--border);height:36px;align-self:center}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin:1.5rem 0}
+.filter-chip{padding:7px 16px;border-radius:99px;border:1px solid var(--border);background:var(--surface);font-size:13px;cursor:pointer;transition:all .2s;font-weight:500}
+.filter-chip.active,.filter-chip:hover{background:var(--gold-light);border-color:var(--gold);color:var(--gold-dark);font-weight:600}
+.no-rides{text-align:center;padding:4rem 2rem;color:var(--text-muted)}
+.no-rides-icon{font-size:56px;margin-bottom:16px}
+
+/* ===== AUTH PAGE ===== */
+.auth-wrap{min-height:calc(100vh - var(--nav-h));display:grid;grid-template-columns:1fr 1fr}
+.auth-left{background:linear-gradient(160deg,#0f0d08 0%,#2a1f0a 60%,#0f0d08 100%);display:flex;flex-direction:column;justify-content:center;padding:4rem;position:relative;overflow:hidden}
+.auth-left::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 70%,rgba(201,168,76,.15) 0%,transparent 60%)}
+.auth-left-content{position:relative;z-index:1}
+.auth-left h2{font-size:clamp(2rem,4vw,3rem);color:#f0ece4;line-height:1.1;margin:16px 0}
+.auth-left p{color:#a09880;font-size:16px;line-height:1.7;max-width:400px}
+.auth-left-perks{margin-top:2.5rem;display:flex;flex-direction:column;gap:12px}
+.auth-perk{display:flex;align-items:center;gap:12px;color:#c8bfb0;font-size:14px}
+.auth-perk-icon{width:32px;height:32px;border-radius:8px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.auth-right{display:flex;flex-direction:column;justify-content:center;padding:4rem;background:var(--surface)}
+.auth-form-box{max-width:420px;width:100%}
+.auth-tabs{display:flex;gap:0;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:9px;text-align:center;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;color:var(--text-muted)}
+.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.auth-title{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:6px}
+.auth-subtitle{color:var(--text-muted);font-size:14px;margin-bottom:28px}
+.forgot-link{font-size:13px;color:var(--gold);cursor:pointer;text-align:right;display:block;margin-top:-10px;margin-bottom:20px}
+.or-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text-faint);font-size:13px}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ===== DASHBOARD ===== */
+.dashboard-layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - var(--nav-h))}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 1rem}
+.sidebar-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:0 8px;margin:20px 0 8px}
+.sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text-muted);transition:all .2s;margin-bottom:2px}
+.sidebar-link:hover{background:var(--surface2);color:var(--text)}
+.sidebar-link.active{background:var(--gold-light);color:var(--gold-dark);font-weight:600}
+.sidebar-link span.icon{font-size:18px;width:22px;text-align:center}
+.dashboard-main{padding:2.5rem;background:var(--bg);overflow-y:auto}
+.dash-header{margin-bottom:2rem}
+.dash-greeting{font-size:22px;font-weight:600}
+.dash-date{color:var(--text-muted);font-size:14px;margin-top:4px}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:2rem}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.2rem 1.4rem}
+.metric-label{font-size:12px;color:var(--text-muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+.metric-val{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--text)}
+.metric-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+.metric-card.gold-accent{border-left:3px solid var(--gold)}
+.tab-view{display:none}.tab-view.active{display:block}
+.rides-table{width:100%;border-collapse:collapse}
+.rides-table th{text-align:left;padding:10px 16px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);border-bottom:2px solid var(--border)}
+.rides-table td{padding:14px 16px;font-size:14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rides-table tr:last-child td{border-bottom:none}
+.rides-table tr:hover td{background:var(--surface2)}
+.profile-card{max-width:600px}
+.profile-avatar-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dark));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff}
+.profile-info{display:flex;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.rating-stars{color:var(--gold);font-size:20px}
+
+/* ===== POST RIDE ===== */
+.post-wrap{max-width:680px;margin:3rem auto;padding:0 2rem}
+.post-hero{background:linear-gradient(135deg,#0f0d08,#2a1f0a);border-radius:20px;padding:2.5rem;margin-bottom:2rem;text-align:center}
+.post-hero h2{color:#f0ece4;font-size:26px;margin:12px 0 8px}
+.post-hero p{color:#a09880;font-size:15px}
+.step-indicator{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:2rem}
+.step{display:flex;align-items:center;gap:8px}
+.step-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;transition:all .3s}
+.step-num.done{background:var(--gold);color:#fff}
+.step-num.current{background:var(--gold-light);color:var(--gold-dark);border:2px solid var(--gold)}
+.step-num.pending{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
+.step-label{font-size:12px;font-weight:600;color:var(--text-muted)}
+.step-label.current{color:var(--gold-dark)}
+.step-line{width:40px;height:2px;background:var(--border);margin:0 4px}
+.step-line.done{background:var(--gold)}
+.price-preview{background:var(--gold-light);border:1px solid var(--gold);border-radius:12px;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-top:20px}
+
+/* ===== BOOKING CONFIRM ===== */
+.confirm-wrap{max-width:520px;margin:4rem auto;padding:0 2rem}
+.confirm-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.confirm-header{background:linear-gradient(135deg,#0f0d08,#2a1f0a);padding:2rem;text-align:center}
+.confirm-icon{width:64px;height:64px;border-radius:50%;background:rgba(201,168,76,.2);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px}
+.confirm-title{color:#f0ece4;font-size:22px;margin-bottom:6px}
+.confirm-subtitle{color:#a09880;font-size:14px}
+.confirm-body{padding:2rem}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border:none}
+.detail-key{font-size:13px;color:var(--text-muted);font-weight:500}
+.detail-val{font-size:14px;font-weight:600}
+.confirm-total{background:var(--gold-light);border-radius:12px;padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:center;margin:16px 0}
+.confirm-total-label{font-weight:600}
+.confirm-total-price{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--gold-dark)}
+
+/* ===== TESTIMONIALS ===== */
+.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.testimonial-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.8rem;position:relative}
+.testimonial-card::before{content:'"';position:absolute;top:12px;right:20px;font-family:'Playfair Display',serif;font-size:72px;color:var(--gold);opacity:.15;line-height:1}
+.testimonial-text{font-size:15px;line-height:1.7;color:var(--text-muted);margin-bottom:20px;font-style:italic}
+.testimonial-author{display:flex;align-items:center;gap:12px}
+.testimonial-avatar{width:40px;height:40px;border-radius:50%;background:var(--gold-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--gold-dark)}
+.testimonial-name{font-weight:600;font-size:14px}
+.testimonial-city{font-size:12px;color:var(--text-muted)}
+
+/* ===== FOOTER ===== */
+footer{background:var(--surface2);border-top:1px solid var(--border);padding:3rem 2rem;text-align:center}
+.footer-brand{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold);margin-bottom:8px}
+.footer-sub{color:var(--text-muted);font-size:14px}
+.footer-links{display:flex;gap:24px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.footer-link{font-size:13px;color:var(--text-muted);cursor:pointer;transition:color .2s}
+.footer-link:hover{color:var(--gold)}
+
+/* ===== SECTION TITLES ===== */
+.section-eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-dark);background:var(--gold-light);padding:4px 14px;border-radius:99px;margin-bottom:14px}
+.section-title{font-size:clamp(1.8rem,3.5vw,2.5rem);font-weight:700;margin-bottom:12px}
+.section-subtitle{color:var(--text-muted);font-size:16px;line-height:1.7;max-width:520px}
+
+/* ===== HOW IT WORKS ===== */
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px;position:relative}
+.how-step{text-align:center}
+.how-num{width:56px;height:56px;border-radius:50%;background:var(--gold-light);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold-dark);margin:0 auto 16px}
+.how-title{font-weight:700;font-size:16px;margin-bottom:8px}
+.how-desc{color:var(--text-muted);font-size:14px;line-height:1.6}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr}
+  .hero-search-box{display:none}
+  .auth-left{display:none}
+  .auth-right{padding:2rem}
+  .auth-wrap{grid-template-columns:1fr}
+  .dashboard-layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .search-bar{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .hero{padding:4rem 1.2rem 3rem}
+  .hero-btns{flex-direction:column}
+  .btn{width:100%;justify-content:center}
+  .nav-links{display:none}
+  .section{padding:3rem 0}
+  .container{padding:0 1.2rem}
+  .rides-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+  
+<!-- NOTIFICATION -->
+<div id="notification"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="brand" onclick="showPage('home')">Ride<span>Vogue</span></div>
+    <div class="nav-links">
+      <button class="nav-link active" id="nav-home" onclick="showPage('home')">Home</button>
+      <button class="nav-link" id="nav-search" onclick="showPage('search')">Find Ride</button>
+      <button class="nav-link" id="nav-onboard" style="display:none" onclick="showPage('driver-onboard')">Become Driver</button>
+      <button class="nav-link" id="nav-post" style="display:none" onclick="showPage('post')">Offer Ride</button>
+      <button class="nav-link" id="nav-dashboard" style="display:none" onclick="showPage('dashboard')">Dashboard</button>
+      <button class="nav-link" id="nav-admin" style="display:none" onclick="showPage('admin')">Admin Portal</button>
+    </div>
+    <div class="nav-right">
+      <button class="dark-toggle" onclick="toggleDark()" id="dark-btn">🌙</button>
+      <div id="nav-auth-area">
+        <button class="btn btn-primary btn-sm" onclick="showPage('auth')">Sign In</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ===================== HOME PAGE ===================== -->
+<div class="page active" id="page-home">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-grid">
+      <div class="fade-up">
+        <div class="hero-chip">
+          <span class="hero-chip-dot"></span>
+          <span class="hero-chip-text">Premium Ride Sharing</span>
+        </div>
+        <h1 class="hero-title">Ride Together<br><span>In Style</span></h1>
+        <p class="hero-subtitle">Share rides, split costs, and travel sustainably. India's most fashionable carpooling platform designed for the modern traveler.</p>
+        <div class="hero-btns">
+          <button class="btn btn-primary" style="font-size:16px;padding:15px 36px" onclick="showPage('search')">Find a Ride &rarr;</button>
+          <button class="btn btn-outline" style="font-size:16px;padding:15px 36px;border-color:rgba(201,168,76,.5);color:var(--gold)" onclick="showPage('post')">Offer a Ride</button>
+        </div>
+        <div class="hero-stat-row">
+          <div><div class="hero-stat-val">⭐ 4.9</div><div class="hero-stat-label">Avg Rating</div></div>
+          <div><div class="hero-stat-val">48K+</div><div class="hero-stat-label">Rides Shared</div></div>
+          <div><div class="hero-stat-val">120+</div><div class="hero-stat-label">Cities</div></div>
+        </div>
+      </div>
+      <div class="hero-search-box fade-up fade-up-d2">
+        <div class="hero-search-title">Find Your Ride</div>
+        <div class="form-group">
+          <label class="form-label">From</label>
+          <input class="form-input" id="hero-from" list="city-list-1" placeholder="Departure city…" oninput="document.getElementById('s-from').value=this.value"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">To</label>
+          <input class="form-input" id="hero-to" list="city-list-2" placeholder="Destination city…" oninput="document.getElementById('s-to').value=this.value"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="hero-date" oninput="document.getElementById('s-date').value=this.value"/>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="showPage('search')">Search Rides</button>
+        <datalist id="city-list-1"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/><option value="Pune"/><option value="Delhi"/><option value="Jaipur"/><option value="Chennai"/><option value="Coimbatore"/><option value="Vijayawada"/><option value="Mysore"/></datalist>
+        <datalist id="city-list-2"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/><option value="Pune"/><option value="Delhi"/><option value="Jaipur"/><option value="Chennai"/><option value="Coimbatore"/><option value="Vijayawada"/><option value="Mysore"/></datalist>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stats-grid">
+      <div><div class="stat-val" id="stat-0">0</div><div class="stat-label">Happy Riders</div></div>
+      <div><div class="stat-val" id="stat-1">0</div><div class="stat-label">Rides Shared</div></div>
+      <div><div class="stat-val" id="stat-2">0</div><div class="stat-label">Cities Covered</div></div>
+      <div><div class="stat-val" id="stat-3">0</div><div class="stat-label">CO₂ Saved (kg)</div></div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="section">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:3rem">
+        <span class="section-eyebrow">Why RideVogue</span>
+        <h2 class="section-title">Travel Smarter, Not Harder</h2>
+        <p class="section-subtitle" style="margin:0 auto">Everything you need for a premium shared ride experience across India.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card fade-up">
+          <div class="feature-icon">💰</div>
+          <div class="feature-title">Save Big</div>
+          <div class="feature-desc">Split fuel and toll costs with co-passengers. Save up to 70% per trip compared to solo travel.</div>
+        </div>
+        <div class="feature-card fade-up fade-up-d1">
+          <div class="feature-icon">🌿</div>
+          <div class="feature-title">Go Green</div>
+          <div class="feature-desc">Reduce your carbon footprint with every shared ride. Travel sustainably without compromise.</div>
+        </div>
+        <div class="feature-card fade-up fade-up-d2">
+          <div class="feature-icon">🛡️</div>
+          <div class="feature-title">Verified Drivers</div>
+          <div class="feature-desc">All drivers are KYC verified with thorough background checks and community ratings.</div>
+        </div>
+        <div class="feature-card fade-up fade-up-d3">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Instant Booking</div>
+          <div class="feature-desc">Book in seconds with real-time confirmations. Zero waiting, pure convenience.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="section" style="background:var(--surface2)">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:3rem">
+        <span class="section-eyebrow">Simple Process</span>
+        <h2 class="section-title">How It Works</h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-step fade-up">
+          <div class="how-num">1</div>
+          <div class="how-title">Search Your Route</div>
+          <div class="how-desc">Enter your pickup, destination and travel date to find available rides.</div>
+        </div>
+        <div class="how-step fade-up fade-up-d1">
+          <div class="how-num">2</div>
+          <div class="how-title">Choose a Ride</div>
+          <div class="how-desc">Browse verified driver profiles, ratings and pick the best fit for you.</div>
+        </div>
+        <div class="how-step fade-up fade-up-d2">
+          <div class="how-num">3</div>
+          <div class="how-title">Book & Pay</div>
+          <div class="how-desc">Confirm your seat instantly and pay securely through the platform.</div>
+        </div>
+        <div class="how-step fade-up fade-up-d3">
+          <div class="how-num">4</div>
+          <div class="how-title">Travel in Style</div>
+          <div class="how-desc">Enjoy your ride, meet fellow travelers, and save money on every trip.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured Rides -->
+  <div class="section">
+    <div class="container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:gap">
+        <div>
+          <span class="section-eyebrow">Available Now</span>
+          <h2 class="section-title" style="margin-bottom:0">Featured Rides</h2>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="showPage('search')">View All Rides</button>
+      </div>
+      <div class="rides-grid" id="featured-rides"></div>
+    </div>
+  </div>
+
+  <!-- Testimonials -->
+  <div class="section" style="background:var(--surface2)">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:2.5rem">
+        <span class="section-eyebrow">Loved By Riders</span>
+        <h2 class="section-title">What Our Community Says</h2>
+      </div>
+      <div class="testimonials-grid" id="testimonials"></div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="background:linear-gradient(135deg,#0f0d08,#2a1f0a);padding:5rem 2rem;text-align:center">
+    <div class="hero-chip" style="display:inline-flex;margin-bottom:20px">
+      <span class="hero-chip-dot"></span>
+      <span class="hero-chip-text">Join Today</span>
+    </div>
+    <h2 style="color:#f0ece4;font-size:clamp(2rem,4vw,3rem);margin-bottom:16px">Ready to Ride Vogue?</h2>
+    <p style="color:#a09880;font-size:16px;margin-bottom:32px;max-width:480px;margin-left:auto;margin-right:auto">Join thousands of stylish travelers saving money and the planet, one shared ride at a time.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" style="font-size:16px;padding:15px 36px" onclick="showPage('auth')">Get Started Free</button>
+      <button class="btn btn-outline" style="font-size:16px;padding:15px 36px;border-color:rgba(201,168,76,.5);color:var(--gold)" onclick="showPage('search')">Browse Rides</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-brand">RideVogue</div>
+    <div class="footer-sub">India's premium carpooling platform. Travel stylishly, sustainably.</div>
+    <div class="footer-links">
+      <span class="footer-link">About</span>
+      <span class="footer-link">Safety</span>
+      <span class="footer-link">Press</span>
+      <span class="footer-link">Careers</span>
+      <span class="footer-link">Help</span>
+      <span class="footer-link">Privacy</span>
+      <span class="footer-link">Terms</span>
+    </div>
+    <div style="margin-top:20px;color:var(--text-faint);font-size:12px">© 2026 RideVogue. All rights reserved.</div>
+  </footer>
+</div>
+
+<!-- ===================== SEARCH PAGE ===================== -->
+<div class="page" id="page-search">
+  <div class="search-header">
+    <div class="container">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;margin-bottom:16px">Find Your Perfect Ride</h2>
+      <div class="search-bar">
+        <div>
+          <label class="form-label">From</label>
+          <input class="form-input" id="s-from" list="city-list-s1" placeholder="Departure…" oninput="filterRides()"/>
+          <datalist id="city-list-s1"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/><option value="Pune"/><option value="Delhi"/><option value="Chennai"/><option value="Vijayawada"/><option value="Mysore"/></datalist>
+        </div>
+        <div>
+          <label class="form-label">To</label>
+          <input class="form-input" id="s-to" list="city-list-s2" placeholder="Destination…" oninput="filterRides()"/>
+          <datalist id="city-list-s2"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/><option value="Pune"/><option value="Delhi"/><option value="Chennai"/><option value="Vijayawada"/><option value="Mysore"/></datalist>
+        </div>
+        <div>
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="s-date" oninput="filterRides()"/>
+        </div>
+        <button class="btn btn-primary" onclick="filterRides()">Search</button>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-chip active" onclick="setFilter(this,'all')">All Rides</span>
+        <span class="filter-chip" onclick="setFilter(this,'cheap')">💰 Budget</span>
+        <span class="filter-chip" onclick="setFilter(this,'top')">⭐ Top Rated</span>
+        <span class="filter-chip" onclick="setFilter(this,'seats')">💺 2+ Seats</span>
+        <span class="filter-chip" onclick="setFilter(this,'today')">📅 Today</span>
+      </div>
+    </div>
+  </div>
+  <div class="container section" style="padding-top:2rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <span id="results-count" style="color:var(--text-muted);font-size:14px"></span>
+      <select class="form-input form-select" style="width:auto;padding:8px 36px 8px 12px;font-size:13px" onchange="sortRides(this.value)">
+        <option value="default">Sort: Default</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="rating">Highest Rated</option>
+      </select>
+    </div>
+    <div class="rides-grid" id="search-rides"></div>
+  </div>
+</div>
+
+<!-- ===================== AUTH PAGE ===================== -->
+<div class="page" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="auth-left-content">
+        <div class="hero-chip" style="display:inline-flex">
+          <span class="hero-chip-dot"></span>
+          <span class="hero-chip-text">Welcome Back</span>
+        </div>
+        <h2 class="fade-up">Ride <span style="color:var(--gold)">Smarter,<br>Save</span> More.</h2>
+        <p class="fade-up fade-up-d1" style="color:#a09880;font-size:16px;line-height:1.7;max-width:400px;margin-top:12px">Join India's most fashionable carpooling community and start saving today.</p>
+        <div class="auth-left-perks fade-up fade-up-d2">
+          <div class="auth-perk"><div class="auth-perk-icon">💰</div>Save up to ₹12,000/month on travel costs</div>
+          <div class="auth-perk"><div class="auth-perk-icon">🛡️</div>100% verified & background-checked drivers</div>
+          <div class="auth-perk"><div class="auth-perk-icon">⚡</div>Instant booking with real-time confirmations</div>
+          <div class="auth-perk"><div class="auth-perk-icon">🌿</div>Reduce your carbon footprint every trip</div>
+        </div>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="auth-form-box fade-in" id="auth-form-box">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+          <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Create Account</div>
+        </div>
+
+        <!-- LOGIN -->
+        <div id="form-login">
+          <h2 class="auth-title">Welcome back</h2>
+          <p class="auth-subtitle">Sign in to continue your journey</p>
+          <div class="form-group">
+            <label class="form-label">Account type</label>
+            <select class="form-input form-select" id="login-role">
+              <option value="rider">Rider</option>
+              <option value="driver">Driver</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input class="form-input" id="login-email" type="email" placeholder="you@example.com"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" id="login-pass" type="password" placeholder="••••••••"/>
+          </div>
+          <span class="forgot-link" onclick="showNotification('Password reset link sent! Check your email.','info')">Forgot password?</span>
+          <button class="btn btn-primary btn-full" onclick="handleLogin()">Sign In &rarr;</button>
+          <div class="or-divider">or</div>
+          <button class="btn btn-ghost btn-full" onclick="handleGuestLogin()">👤 Continue as Guest</button>
+        </div>
+
+        <!-- SIGNUP -->
+        <div id="form-signup" style="display:none">
+          <h2 class="auth-title">Create account</h2>
+          <p class="auth-subtitle">Join thousands of smart travelers</p>
+          <div class="form-group">
+            <label class="form-label">Account type</label>
+            <select class="form-input form-select" id="signup-role" onchange="toggleSignupRole()">
+              <option value="rider">Rider</option>
+              <option value="driver">Driver</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" id="signup-name" placeholder="Ananya Sharma"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input class="form-input" id="signup-email" type="email" placeholder="you@example.com"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input class="form-input" id="signup-phone" type="tel" placeholder="+91 98765 43210"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-input" id="signup-pass" type="password" placeholder="Min 8 characters"/>
+          </div>
+          <div id="driverSignupFields" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Driver license number</label>
+              <input class="form-input" id="signup-license" placeholder="MH12AB1234"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vehicle registration</label>
+              <input class="form-input" id="signup-vehicle" placeholder="Toyota Innova"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Insurance status</label>
+              <input class="form-input" id="signup-insurance" placeholder="Active / Expiry 2027"/>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="handleSignup()">Create Account →</button>
+          <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:14px">By signing up you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DRIVER ONBOARDING PAGE ===================== -->
+<div class="page" id="page-driver-onboard">
+  <div class="auth-wrap" style="padding-bottom:4rem">
+    <div class="auth-left">
+      <div class="auth-left-content">
+        <div class="hero-chip">
+          <span class="hero-chip-dot"></span>
+          <span class="hero-chip-text">Driver Onboarding</span>
+        </div>
+        <h2 class="fade-up">Secure onboarding for professional drivers.</h2>
+        <p class="fade-up fade-up-d1" style="color:#a09880;font-size:16px;line-height:1.7;max-width:420px;margin-top:12px">Submit your documents, verify your phone and selfie, then wait for admin approval. Only approved drivers can list rides.</p>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="auth-form-box fade-in">
+        <div id="driver-onboard-status" style="margin-bottom:24px"></div>
+        <div id="driverOnboardForm">
+          <div class="form-group">
+            <label class="form-label">Phone OTP <span style="color:var(--gold);font-size:11px">(click Send OTP button)</span></label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input class="form-input" id="onboard-otp" placeholder="OTP code will appear here" style="flex:1"/>
+              <button class="btn btn-ghost" style="padding:10px 18px" onclick="sendDriverOTP()">Send OTP</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Government ID Number</label>
+            <input class="form-input" id="onboard-govtid" placeholder="Aadhar / Passport"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Driving License Number</label>
+            <input class="form-input" id="onboard-license" placeholder="MH12AB1234"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vehicle RC Number</label>
+            <input class="form-input" id="onboard-rc" placeholder="KA05ZX1234"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Insurance Policy</label>
+            <input class="form-input" id="onboard-insurance" placeholder="Active / Expiry 2027"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Selfie verification</label>
+            <input class="form-input" id="onboard-selfie" placeholder="Describe selfie pose"/>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="submitDriverApplication()">Submit Driver Application</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN PORTAL PAGE ===================== -->
+<div class="page" id="page-admin">
+  <div class="section" style="padding:3rem 0 2rem">
+    <div class="container">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:2rem">
+        <div>
+          <span class="section-eyebrow">Admin Portal</span>
+          <h2 class="section-title">Driver Approvals & Ride Monitoring</h2>
+          <p style="margin:0;max-width:560px;color:var(--text-muted)">Manage driver applications, identify suspicious trips, and keep the platform safe and trusted for every passenger.</p>
+        </div>
+      </div>
+      <div class="metrics-grid" style="margin-bottom:2rem">
+        <div class="metric-card gold-accent">
+          <div class="metric-label">Pending Drivers</div>
+          <div class="metric-val" id="admin-pending-count">0</div>
+          <div class="metric-sub">Awaiting approval</div>
+        </div>
+        <div class="metric-card gold-accent">
+          <div class="metric-label">Active Rides</div>
+          <div class="metric-val" id="admin-active-rides">0</div>
+          <div class="metric-sub">Live & published</div>
+        </div>
+        <div class="metric-card gold-accent">
+          <div class="metric-label">Flagged Alerts</div>
+          <div class="metric-val" id="admin-alert-count">0</div>
+          <div class="metric-sub">Fraud / safety</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem">
+        <h3 style="margin-bottom:16px">Driver Applications</h3>
+        <div class="rides-table" style="overflow:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr><th style="text-align:left;padding:14px">Name</th><th style="text-align:left;padding:14px">Phone</th><th style="text-align:left;padding:14px">Status</th><th style="text-align:left;padding:14px">Documents</th><th style="text-align:left;padding:14px">Action</th></tr></thead>
+            <tbody id="admin-approvals-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem">
+        <h3 style="margin-bottom:16px">Ride Monitoring</h3>
+        <div id="admin-ride-monitor" style="display:grid;gap:12px"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:16px">Fraud Detection</h3>
+        <div id="admin-fraud-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== POST RIDE PAGE ===================== -->
+<div class="page" id="page-post">
+  <div class="post-wrap">
+    <div class="post-hero fade-up">
+      <div style="font-size:40px">🚗</div>
+      <h2>Offer a Ride</h2>
+      <p>Share your journey and earn while helping fellow travelers</p>
+    </div>
+    <div id="driver-verification-banner" style="display:none;margin:20px 0;padding:18px;border-radius:18px;background:rgba(255,95,112,.08);border:1px solid rgba(255,95,112,.16);color:#ffe5e8;">
+      <strong>Driver verification required.</strong> Complete credential checks before your trip goes live.
+    </div>
+
+    <div class="step-indicator fade-up fade-up-d1">
+      <div class="step"><div class="step-num current" id="step-1-num">1</div><div class="step-label current" id="step-1-label">Route</div></div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step"><div class="step-num pending" id="step-2-num">2</div><div class="step-label" id="step-2-label">Details</div></div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step"><div class="step-num pending" id="step-3-num">3</div><div class="step-label" id="step-3-label">Review</div></div>
+    </div>
+
+    <div class="card fade-up fade-up-d2">
+      <!-- Step 1 -->
+      <div id="post-step-1">
+        <h3 style="margin-bottom:20px">Route Information</h3>
+        <div class="form-group">
+          <label class="form-label">Departure City *</label>
+          <input class="form-input" id="p-from" list="city-post-1" placeholder="Where are you starting from?"/>
+          <datalist id="city-post-1"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/><option value="Pune"/><option value="Delhi"/><option value="Chennai"/></datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination City *</label>
+          <input class="form-input" id="p-to" list="city-post-2" placeholder="Where are you headed?"/>
+          <datalist id="city-post-2"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/><option value="Pune"/><option value="Delhi"/><option value="Chennai"/></datalist>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Date *</label>
+            <input type="date" class="form-input" id="p-date"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Departure Time *</label>
+            <input type="time" class="form-input" id="p-time"/>
+          </div>
+        </div>
+        <div style="margin-top:20px;text-align:right">
+          <button class="btn btn-primary" onclick="postStep(2)">Next: Trip Details &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="post-step-2" style="display:none">
+        <h3 style="margin-bottom:20px">Trip Details</h3>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Available Seats *</label>
+            <select class="form-input form-select" id="p-seats">
+              <option value="1">1 seat</option>
+              <option value="2">2 seats</option>
+              <option value="3">3 seats</option>
+              <option value="4">4 seats</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Price per Seat (₹) *</label>
+            <input type="number" class="form-input" id="p-price" placeholder="e.g. 500" oninput="updatePricePreview()"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:18px">
+          <label class="form-label">Car Model</label>
+          <input class="form-input" id="p-car" placeholder="e.g. Toyota Innova 2023"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trip Notes (Optional)</label>
+          <textarea class="form-input" id="p-notes" rows="3" placeholder="E.g. AC available, luggage space, stops allowed…" style="resize:vertical"></textarea>
+        </div>
+        <div class="price-preview" id="price-preview" style="display:none">
+          <div>
+            <div style="font-size:12px;color:var(--gold-dark);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Earnings Estimate</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:3px">Based on <span id="pp-seats">1</span> seat(s) × ₹<span id="pp-price">0</span></div>
+          </div>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--gold-dark)">₹<span id="pp-total">0</span></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:20px">
+          <button class="btn btn-ghost" onclick="postStep(1)">&larr; Back</button>
+          <button class="btn btn-primary" style="flex:1" onclick="postStep(3)">Review Ride &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="post-step-3" style="display:none">
+        <h3 style="margin-bottom:20px">Review & Publish</h3>
+        <div style="background:var(--surface2);border-radius:12px;padding:1.2rem;margin-bottom:20px" id="post-review-box"></div>
+        <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:12px;padding:1rem 1.2rem;display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <span style="font-size:22px">💡</span>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:var(--gold-dark)">RideVogue Safety Reminder</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:2px">Share your ride details only with booked passengers. Keep your documents handy.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-ghost" onclick="postStep(2)">&larr; Edit Details</button>
+          <button class="btn btn-primary" style="flex:1" onclick="submitRide()">🚀 Publish My Ride</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BOOKING CONFIRM PAGE ===================== -->
+<div class="page" id="page-booking-confirm">
+  <div class="confirm-wrap">
+    <div class="confirm-card fade-up">
+      <div class="confirm-header">
+        <div class="confirm-icon">🚗</div>
+        <div class="confirm-title">Confirm Your Booking</div>
+        <div class="confirm-subtitle">Review the details before confirming</div>
+      </div>
+      <div class="confirm-body">
+        <div id="booking-details"></div>
+        <div class="confirm-total">
+          <div class="confirm-total-label">Total Amount</div>
+          <div class="confirm-total-price" id="confirm-total-price">₹0</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:1rem;margin-bottom:20px;font-size:13px;color:var(--text-muted)">
+          💳 <strong>Demo Payment:</strong> No real payment is processed. This simulates the booking flow for your SQL-connected application.
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-ghost" style="flex:1" onclick="showPage('search')">&larr; Go Back</button>
+          <button class="btn btn-primary" style="flex:1" onclick="confirmBooking()">✅ Confirm &amp; Pay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TRACKING PAGE ===================== -->
+<div class="page" id="page-track">
+  <div class="confirm-wrap">
+    <div class="confirm-card fade-up">
+      <div class="confirm-header">
+        <div class="confirm-icon">📲</div>
+        <div class="confirm-title">Boarding Verification</div>
+        <div class="confirm-subtitle">Scan QR and validate OTP before boarding</div>
+      </div>
+      <div class="confirm-body">
+        <div style="background:var(--surface2);border-radius:16px;padding:22px;margin-bottom:20px;text-align:center">
+          <div style="font-size:18px;font-weight:700;margin-bottom:10px">Ride Route</div>
+          <div style="font-size:14px;color:var(--text-muted);margin-bottom:10px" id="track-id">Hyderabad → Bangalore</div>
+          <div style="font-size:13px;color:var(--text-muted)">Driver: <strong id="track-driver">Arjun Mehta</strong></div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:10px">Use the boarding OTP or scan the QR code with the driver app.</div>
+        </div>
+        <div class="qr-card" style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:20px;padding:22px;border-radius:18px;background:var(--surface2)">
+          <div style="font-size:96px;letter-spacing:10px;color:var(--gold)" id="track-ride-code">123456</div>
+          <div style="font-size:13px;color:var(--text-muted)">Boarding OTP</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Enter boarding OTP</label>
+          <input class="form-input" id="track-otp" placeholder="Enter code shown above"/>
+        </div>
+        <input type="hidden" id="track-booking-id" />
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-ghost" style="flex:1" onclick="showPage('dashboard')">Back to Dashboard</button>
+          <button class="btn btn-primary" style="flex:1" onclick="verifyBoardingOTP()">Verify OTP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="driverVerifyModal" style="display:none">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <div class="hero-chip" style="display:inline-flex;margin-bottom:10px">
+          <span class="hero-chip-dot"></span>
+          <span class="hero-chip-text">Driver Verification</span>
+        </div>
+        <h2 style="margin:0;font-size:22px">Confirm your credential details</h2>
+      </div>
+      <button class="close-btn" onclick="closeDriverVerifyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:18px;color:var(--text-muted)">To protect riders, only verified drivers may publish rides. Confirm your driver documents and start posting with trust.</div>
+      <div class="form-group">
+        <label class="form-label">License number</label>
+        <input class="form-input" id="verify-license" readonly />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vehicle model</label>
+        <input class="form-input" id="verify-vehicle" readonly />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Insurance status</label>
+        <input class="form-input" id="verify-insurance" readonly />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeDriverVerifyModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="verifyDriverCredentials()">Verify credentials</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD PAGE ===================== -->
+<div class="page" id="page-dashboard">
+  <div class="dashboard-layout">
+    <div class="sidebar">
+      <div style="display:flex;align-items:center;gap:12px;padding:0 8px;margin-bottom:8px">
+        <div class="driver-avatar" id="sb-avatar" style="width:42px;height:42px;font-size:15px">U</div>
+        <div>
+          <div style="font-weight:600;font-size:14px" id="sb-name">User</div>
+          <div style="font-size:12px;color:var(--text-muted)">Rider</div>
+        </div>
+      </div>
+      <div class="sidebar-title">Main</div>
+      <div class="sidebar-link active" id="sb-dashboard" onclick="switchTab('dashboard')"><span class="icon">📊</span> Dashboard</div>
+      <div class="sidebar-link" id="sb-bookings" onclick="switchTab('bookings')"><span class="icon">🎫</span> My Bookings</div>
+      <div class="sidebar-link" id="sb-rides" onclick="switchTab('rides')"><span class="icon">🚗</span> My Rides</div>
+      <div class="sidebar-title">Account</div>
+      <div class="sidebar-link" id="sb-profile" onclick="switchTab('profile')"><span class="icon">👤</span> Profile</div>
+      <div class="sidebar-link" id="sb-settings" onclick="switchTab('settings')"><span class="icon">⚙️</span> Settings</div>
+      <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border);margin-top:40px">
+        <div class="sidebar-link" onclick="handleLogout()" style="color:var(--red)"><span class="icon">🚪</span> Sign Out</div>
+      </div>
+    </div>
+
+    <div class="dashboard-main">
+      <!-- Dashboard Tab -->
+      <div class="tab-view active" id="tab-dashboard">
+        <div class="dash-header">
+          <div class="dash-greeting">Good morning, <span id="dash-name">User</span> 👋</div>
+          <div class="dash-date" id="dash-date"></div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-card gold-accent">
+            <div class="metric-label">Total Rides</div>
+            <div class="metric-val" id="m-rides">0</div>
+            <div class="metric-sub">All time</div>
+          </div>
+          <div class="metric-card gold-accent">
+            <div class="metric-label">Total Savings</div>
+            <div class="metric-val" id="m-savings">₹0</div>
+            <div class="metric-sub">vs solo travel</div>
+          </div>
+          <div class="metric-card gold-accent">
+            <div class="metric-label">Upcoming Rides</div>
+            <div class="metric-val" id="m-upcoming">1</div>
+            <div class="metric-sub">Confirmed</div>
+          </div>
+          <div class="metric-card gold-accent">
+            <div class="metric-label">Your Rating</div>
+            <div class="metric-val">4.9 ⭐</div>
+            <div class="metric-sub">Based on reviews</div>
+          </div>
+        </div>
+
+        <h3 style="font-size:18px;margin-bottom:16px">Upcoming Rides</h3>
+        <div id="upcoming-rides-dash"></div>
+
+        <h3 style="font-size:18px;margin:24px 0 16px">Quick Actions</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+          <button class="card" style="text-align:center;cursor:pointer;border:none" onclick="showPage('search')">
+            <div style="font-size:28px;margin-bottom:8px">🔍</div>
+            <div style="font-weight:600;font-size:14px">Find Ride</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Search available rides</div>
+          </button>
+          <button class="card" style="text-align:center;cursor:pointer;border:none" onclick="showPage('post')">
+            <div style="font-size:28px;margin-bottom:8px">🚗</div>
+            <div style="font-weight:600;font-size:14px">Offer Ride</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Share your journey</div>
+          </button>
+          <button class="card" style="text-align:center;cursor:pointer;border:none" onclick="switchTab('profile')">
+            <div style="font-size:28px;margin-bottom:8px">👤</div>
+            <div style="font-weight:600;font-size:14px">Edit Profile</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Update your info</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bookings Tab -->
+      <div class="tab-view" id="tab-bookings">
+        <div class="dash-header">
+          <div class="dash-greeting">My Bookings</div>
+          <div class="dash-date">All rides you've booked</div>
+        </div>
+        <div class="card" style="overflow:auto">
+          <table class="rides-table" id="bookings-table">
+            <thead><tr>
+              <th>Route</th><th>Date</th><th>Driver</th><th>Price</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="bookings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- My Rides Tab -->
+      <div class="tab-view" id="tab-rides">
+        <div class="dash-header">
+          <div class="dash-greeting">Rides I Offered</div>
+          <div class="dash-date">Manage your posted rides</div>
+        </div>
+        <div style="text-align:center;padding:3rem;color:var(--text-muted)">
+          <div style="font-size:48px;margin-bottom:12px">🚗</div>
+          <div style="font-weight:600;margin-bottom:8px">No rides posted yet</div>
+          <div style="font-size:14px;margin-bottom:20px">Share your journey and earn while helping others travel</div>
+          <button class="btn btn-primary" onclick="showPage('post')">Post a Ride</button>
+        </div>
+      </div>
+
+      <!-- Profile Tab -->
+      <div class="tab-view" id="tab-profile">
+        <div class="dash-header">
+          <div class="dash-greeting">My Profile</div>
+        </div>
+        <div class="card profile-card">
+          <div class="profile-info">
+            <div class="profile-avatar-big" id="profile-avatar-big">U</div>
+            <div>
+              <div style="font-size:20px;font-weight:700" id="profile-name-big">User</div>
+              <div style="color:var(--text-muted);font-size:14px;margin-top:4px" id="profile-email-big">user@example.com</div>
+              <div class="stars" style="margin-top:6px">★★★★★ <span style="color:var(--text-muted);font-size:13px">4.9 rating</span></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" id="profile-name-inp"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="profile-email-inp" type="email"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input class="form-input" placeholder="+91 98765 43210"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input class="form-input" id="profile-city-inp" list="city-profile"/>
+            <datalist id="city-profile"><option value="Hyderabad"/><option value="Bangalore"/><option value="Mumbai"/></datalist>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bio</label>
+            <textarea class="form-input" rows="3" placeholder="Tell other riders about yourself…" style="resize:vertical"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="tab-view" id="tab-settings">
+        <div class="dash-header"><div class="dash-greeting">Settings</div></div>
+        <div class="card" style="max-width:520px">
+          <h3 style="margin-bottom:20px;font-size:17px">Preferences</h3>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--surface2);border-radius:10px">
+              <div><div style="font-weight:600;font-size:14px">Dark Mode</div><div style="font-size:12px;color:var(--text-muted)">Toggle dark theme</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="toggleDark()" id="settings-dark-btn">Switch</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--surface2);border-radius:10px">
+              <div><div style="font-weight:600;font-size:14px">Email Notifications</div><div style="font-size:12px;color:var(--text-muted)">Get notified about bookings</div></div>
+              <input type="checkbox" checked style="width:18px;height:18px;accent-color:var(--gold)"/>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--surface2);border-radius:10px">
+              <div><div style="font-weight:600;font-size:14px">SMS Alerts</div><div style="font-size:12px;color:var(--text-muted)">Ride confirmations via SMS</div></div>
+              <input type="checkbox" checked style="width:18px;height:18px;accent-color:var(--gold)"/>
+            </div>
+          </div>
+          <h3 style="margin:28px 0 16px;font-size:17px">Danger Zone</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="showNotification('Password reset email sent!','info')">Change Password</button>
+            <button class="btn btn-danger btn-sm" onclick="handleLogout()">Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+// ===== DATA (mirrors your SQL schema) =====
+const USERS = [
+  {id:1,name:"Ananya Sharma",email:"ananya@ridevogue.com",password:"Rider@123",role:"rider",verified:true,rides:12,savings:10800,city:"Hyderabad",phone:"+91 98765 43210"},
+  {id:2,name:"Vikram Singh",email:"vikram@ridevogue.com",password:"Driver@123",role:"driver",verified:false,verificationStatus:"pending",license:"MH12AB1234",vehicle:"Toyota Innova",insurance:"Active",rides:0,savings:0,city:"Mumbai",phone:"+91 98234 56789"},
+  {id:3,name:"Sonia Patel",email:"admin@ridevogue.com",password:"Admin@123",role:"admin",verified:true,rides:0,savings:0,city:"Mumbai",phone:"+91 90000 00000"},
+];
+
+const RIDES_DB = [
+  {id:1,driver:"Arjun Mehta",avatar:"AM",from:"Hyderabad",to:"Bangalore",date:"2026-05-24",time:"07:00 AM",seats:3,price:850,rating:4.9,car:"Toyota Innova",reviews:128,tag:"Smooth Drive",verified:true},
+  {id:2,driver:"Priya Sharma",avatar:"PS",from:"Mumbai",to:"Pune",date:"2026-05-24",time:"09:30 AM",seats:2,price:420,rating:4.7,car:"Honda City",reviews:89,tag:"Top Rated",verified:true},
+  {id:3,driver:"Karan Verma",avatar:"KV",from:"Delhi",to:"Jaipur",date:"2026-05-25",time:"06:00 AM",seats:4,price:650,rating:4.8,car:"Maruti Ertiga",reviews:211,tag:"Budget Pick",verified:true},
+  {id:4,driver:"Sneha Rao",avatar:"SR",from:"Chennai",to:"Coimbatore",date:"2026-05-25",time:"08:00 AM",seats:1,price:480,rating:5.0,car:"Hyundai Verna",reviews:56,tag:"Premium",verified:true},
+  {id:5,driver:"Rahul Singh",avatar:"RS",from:"Hyderabad",to:"Vijayawada",date:"2026-05-26",time:"10:00 AM",seats:3,price:380,rating:4.6,car:"Tata Nexon",reviews:74,tag:"New Driver",verified:true},
+  {id:6,driver:"Divya Nair",avatar:"DN",from:"Bangalore",to:"Mysore",date:"2026-05-26",time:"11:00 AM",seats:2,price:320,rating:4.8,car:"Kia Seltos",reviews:143,tag:"Smooth Drive",verified:true},
+];
+
+const TESTIMONIALS_DB = [
+  {name:"Ananya K.",city:"Bangalore",text:"RideVogue transformed my daily commute. Elegant, reliable, and the drivers are absolutely courteous!",avatar:"AK",stars:5},
+  {name:"Rohan M.",city:"Mumbai",text:"Saved over ₹8000 last month alone. The app is so sleek and booking is seamless.",avatar:"RM",stars:5},
+  {name:"Ishita P.",city:"Delhi",text:"As a solo traveler, safety is my priority. RideVogue gives me that plus style!",avatar:"IP",stars:5},
+];
+
+const MY_BOOKINGS = [
+  {id:1,from:"Hyderabad",to:"Bangalore",date:"May 20, 2026",status:"completed",price:850,driver:"Arjun Mehta"},
+  {id:2,from:"Mumbai",to:"Pune",date:"May 15, 2026",status:"completed",price:420,driver:"Priya Sharma"},
+  {id:3,from:"Hyderabad",to:"Vijayawada",date:"May 26, 2026",status:"upcoming",price:380,driver:"Rahul Singh",otp:"827364",boardingVerified:false},
+];
+
+const FRAUD_ALERTS = [
+  {id:1,title:"Driver uploaded expired insurance",detail:"Vehicle RC matched but insurance expiry is in the past."},
+  {id:2,title:"Suspicious booking activity",detail:"Multiple quick cancellations from same rider account."},
+];
+
+let currentUser = null;
+
+function setUser(user){
+  const existingUser = USERS.find(u=>u.id===user.id);
+  currentUser = existingUser || user;
+  currentUser.avatar = currentUser.avatar || currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const authArea = document.getElementById('nav-auth-area');
+  if(authArea){
+    authArea.innerHTML = `<div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="showPage('dashboard');switchTab('profile')">
+      <div class="avatar-sm">${currentUser.avatar}</div>
+      <span style="font-size:14px;font-weight:500">${currentUser.name.split(' ')[0]}</span>
+    </div>`;
+  }
+  updateNavForRole();
+}
+
+let selectedRide = null;
+let currentFilter = 'all';
+let ridesData = [...RIDES_DB];
+
+// ===== NAVIGATION =====
+function showPage(pageId){
+  if(pageId==='post'){ 
+    if(!currentUser){ showNotification('Please sign in as a driver to publish rides.','error'); return showPage('auth'); }
+    if(currentUser.role !== 'driver'){ showNotification('Only drivers can offer rides. Become a driver first.','error'); return showPage('driver-onboard'); }
+    if(!currentUser.verified){ showNotification('Driver verification is required before publishing.','warning'); return showPage('driver-onboard'); }
+  }
+  if(pageId==='driver-onboard' && !currentUser){ showNotification('Please sign in to continue driver onboarding.','info'); return showPage('auth'); }
+  if(pageId==='dashboard' && !currentUser){ showNotification('Please sign in to view your dashboard.','info'); return showPage('auth'); }
+  if(pageId==='admin' && currentUser?.role !== 'admin'){ showNotification('Admin portal is restricted.','error'); return; }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  const pageEl = document.getElementById('page-'+pageId);
+  if(pageEl) pageEl.classList.add('active');
+  const navEl = document.getElementById('nav-'+pageId);
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo(0,0);
+  if(pageId==='search'){ 
+    ridesData = [...RIDES_DB];
+    renderSearchRides(ridesData);
+  }
+  if(pageId==='home'){ renderFeaturedRides(); renderTestimonials(); animateStats(); }
+  if(pageId==='dashboard') renderDashboard();
+  if(pageId==='driver-onboard') renderDriverOnboard();
+  if(pageId==='admin') renderAdminPage();
+  if(pageId==='booking-confirm' && selectedRide) renderBookingConfirm();
+  const driverBanner = document.getElementById('driver-verification-banner');
+  if(driverBanner){
+    driverBanner.style.display = pageId==='post' && currentUser?.role==='driver' && !currentUser.verified ? 'block' : 'none';
+  }
+}
+
+// ===== RIDE CARD TEMPLATE =====
+function rideCardHTML(ride, showBook=true){
+  const stars = '★'.repeat(Math.floor(ride.rating))+'☆'.repeat(5-Math.floor(ride.rating));
+  const tagColors = {'Top Rated':'badge-purple','Budget Pick':'badge-green','Premium':'badge-gold','Smooth Drive':'badge-blue','New Driver':'badge-ghost'};
+  const tagClass = tagColors[ride.tag]||'badge-gold';
+  const seatDots = Array.from({length:4},(_,i)=>`<div class="seat-dot${i<ride.seats?'':' empty'}"></div>`).join('');
+  const verifiedLabel = ride.verified ? `<span class="badge badge-green" style="margin-left:10px">Verified</span>` : '';
+  return `
+  <div class="ride-card fade-in" onclick="openRide(${ride.id})">
+    <div class="ride-header">
+      <div class="driver-avatar">${ride.avatar}</div>
+      <div style="flex:1">
+        <div class="driver-name">${ride.driver}${ride.verified? ' · Verified Driver' : ''}</div>
+        <div class="driver-meta"><span class="stars">${stars}</span> ${ride.rating} · ${ride.reviews} reviews ${verifiedLabel}</div>
+      </div>
+      <span class="badge ${tagClass}">${ride.tag}</span>
+    </div>
+    <div class="ride-route">
+      <div><div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">From</div><div class="route-city">${ride.from}</div></div>
+      <div class="route-arrow">→</div>
+      <div style="text-align:right"><div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">To</div><div class="route-city">${ride.to}</div></div>
+    </div>
+    <div class="ride-meta-row">
+      <div class="ride-meta-item">📅 ${new Date(ride.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      <div class="ride-meta-item">🕐 ${ride.time}</div>
+      <div class="ride-meta-item">🚗 ${ride.car}</div>
+    </div>
+    <div class="ride-footer">
+      <div>
+        <div class="ride-price">₹${ride.price}<span>/seat</span></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <div class="seats-dots">${seats}</div>
+          <span style="font-size:12px;color:var(--text-muted)">${ride.seats} seat${ride.seats>1?'s':''} left</span>
+        </div>
+      </div>
+      ${showBook?`<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();bookRide(${ride.id})">Book Seat</button>`:''}
+    </div>
+  </div>`;
+}
+
+function openRide(id){ bookRide(id); }
+
+function renderFeaturedRides(){
+  const el = document.getElementById('featured-rides');
+  if(el) el.innerHTML = ridesData.slice(0,3).map(r=>rideCardHTML(r)).join('');
+}
+
+function renderTestimonials(){
+  const el = document.getElementById('testimonials');
+  if(!el) return;
+  el.innerHTML = TESTIMONIALS_DB.map(t=>`
+    <div class="testimonial-card fade-in">
+      <div class="stars">${'★'.repeat(t.stars)}</div>
+      <div class="testimonial-text">"${t.text}"</div>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">${t.avatar}</div>
+        <div><div class="testimonial-name">${t.name}</div><div class="testimonial-city">${t.city}</div></div>
+      </div>
+    </div>`).join('');
+}
+
+// ===== STATS ANIMATION =====
+const STATS_DATA = [{val:12400,suf:'+'},{val:48200,suf:'+'},{val:120,suf:'+'},{val:9800,suf:'+'}];
+function animateStats(){
+  STATS_DATA.forEach((s,i)=>{
+    const el = document.getElementById('stat-'+i);
+    if(!el) return;
+    let cur=0; const step=s.val/60;
+    const t = setInterval(()=>{
+      cur=Math.min(cur+step,s.val);
+      el.textContent=Math.floor(cur).toLocaleString()+s.suf;
+      if(cur>=s.val) clearInterval(t);
+    },16);
+  });
+}
+
+// ===== SEARCH & FILTER =====
+function filterRides(){
+  const from = document.getElementById('s-from')?.value.toLowerCase()||'';
+  const to   = document.getElementById('s-to')?.value.toLowerCase()||'';
+  const date = document.getElementById('s-date')?.value||'';
+  let filtered = [...ridesData];
+  if(from) filtered = filtered.filter(r=>r.from.toLowerCase().includes(from));
+  if(to)   filtered = filtered.filter(r=>r.to.toLowerCase().includes(to));
+  if(date) filtered = filtered.filter(r=>r.date===date);
+  applyChipFilter(filtered);
+}
+
+function setFilter(el,type){
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = type;
+  filterRides();
+}
+
+function applyChipFilter(rides){
+  let r = [...rides];
+  if(currentFilter==='cheap') r.sort((a,b)=>a.price-b.price);
+  else if(currentFilter==='top') r=r.filter(x=>x.rating>=4.8);
+  else if(currentFilter==='seats') r=r.filter(x=>x.seats>=2);
+  renderSearchRides(r);
+}
+
+function sortRides(val){
+  const from = document.getElementById('s-from')?.value||'';
+  const to   = document.getElementById('s-to')?.value||'';
+  let r = from||to ? ridesData.filter(x=>(from?x.from.toLowerCase().includes(from.toLowerCase()):true)&&(to?x.to.toLowerCase().includes(to.toLowerCase()):true)) : [...RIDES_DB];
+  if(val==='price-asc') r.sort((a,b)=>a.price-b.price);
+  else if(val==='price-desc') r.sort((a,b)=>b.price-a.price);
+  else if(val==='rating') r.sort((a,b)=>b.rating-a.rating);
+  renderSearchRides(r);
+}
+
+function renderSearchRides(rides){
+  const el = document.getElementById('search-rides');
+  const cnt = document.getElementById('results-count');
+  if(!el) return;
+  if(cnt) cnt.textContent = `${rides.length} ride${rides.length!==1?'s':''} found`;
+  if(rides.length===0){
+    el.innerHTML=`<div class="no-rides" style="grid-column:1/-1"><div class="no-rides-icon">🔍</div><div style="font-weight:600;font-size:18px;margin-bottom:8px">No rides found</div><div style="margin-bottom:20px">Try adjusting your search filters</div><button class="btn btn-outline btn-sm" onclick="document.getElementById('s-from').value='';document.getElementById('s-to').value='';filterRides()">Clear Filters</button></div>`;
+    return;
+  }
+  el.innerHTML = rides.map(r=>rideCardHTML(r)).join('');
+}
+
+// ===== BOOKING =====
+function bookRide(id){
+  selectedRide = ridesData.find(r=>r.id==id);
+  if(!currentUser){ showPage('auth'); showNotification('Please sign in to book a ride','info'); return; }
+  if(currentUser.role !== 'rider'){ showNotification('Only riders can book seats. Use a rider account or create one.','error'); return; }
+  showPage('booking-confirm');
+}
+
+function renderBookingConfirm(){
+  if(!selectedRide) return;
+  const r = selectedRide;
+  document.getElementById('confirm-total-price').textContent = '₹'+r.price;
+  document.getElementById('booking-details').innerHTML = `
+    <div class="detail-row"><span class="detail-key">Driver</span><span class="detail-val">${r.driver}</span></div>
+    <div class="detail-row"><span class="detail-key">Route</span><span class="detail-val">${r.from} → ${r.to}</span></div>
+    <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${new Date(r.date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'})}</span></div>
+    <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">${r.time}</span></div>
+    <div class="detail-row"><span class="detail-key">Car</span><span class="detail-val">${r.car}</span></div>
+    <div class="detail-row"><span class="detail-key">Seats Available</span><span class="detail-val">${r.seats}</span></div>
+    <div class="detail-row"><span class="detail-key">Driver Rating</span><span class="detail-val">⭐ ${r.rating} (${r.reviews} reviews)</span></div>
+  `;
+}
+
+function confirmBooking(){
+  const otp = String(Math.floor(100000 + Math.random()*900000));
+  MY_BOOKINGS.push({id:MY_BOOKINGS.length+1,from:selectedRide.from,to:selectedRide.to,date:selectedRide.date,status:'upcoming',price:selectedRide.price,driver:selectedRide.driver,otp,boardingVerified:false});
+  if(currentUser){ currentUser.rides++; currentUser.savings+=Math.floor(selectedRide.price*0.6); }
+  showNotification('✅ Ride booked successfully! Boarding OTP will be shared shortly.','success');
+  selectedRide=null;
+  showPage('dashboard');
+  switchTab('bookings');
+}
+
+function trackRide(id){
+  const booking = MY_BOOKINGS.find(b=>b.id===id);
+  if(!booking){ showNotification('Unable to find this booking.','error'); return; }
+  document.getElementById('track-ride-code').textContent = booking.otp || '000000';
+  document.getElementById('track-id').textContent = `${booking.from} → ${booking.to}`;
+  document.getElementById('track-driver').textContent = booking.driver;
+  document.getElementById('track-date').textContent = booking.date;
+  document.getElementById('track-status').textContent = booking.boardingVerified ? 'Boarded' : 'Awaiting OTP';
+  document.getElementById('track-booking-id').value = booking.id;
+  showPage('track');
+}
+
+function verifyBoardingOTP(){
+  const bookingId = parseInt(document.getElementById('track-booking-id').value,10);
+  const otpInput = document.getElementById('track-otp').value.trim();
+  const booking = MY_BOOKINGS.find(b=>b.id===bookingId);
+  if(!booking){ showNotification('Booking not found.','error'); return; }
+  if(otpInput===booking.otp){
+    booking.boardingVerified = true;
+    showNotification('✅ Boarding OTP verified. Enjoy your trip!','success');
+    document.getElementById('track-status').textContent = 'Boarded';
+  } else {
+    showNotification('Incorrect OTP. Please use the code shared by the driver.','error');
+  }
+}
+
+// ===== AUTH =====
+function toggleSignupRole(){
+  const role = document.getElementById('signup-role').value;
+  document.getElementById('driverSignupFields').style.display = role === 'driver' ? 'block' : 'none';
+}
+
+function switchAuthTab(tab){
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('form-signup').style.display = tab==='signup'?'block':'none';
+  document.getElementById('tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active',tab==='signup');
+}
+
+function handleLogin(){ 
+  const selectedRole = document.getElementById('login-role').value;
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  if(!email||!pass){showNotification('Please fill all fields','error');return;}
+  const user = USERS.find(u=>u.email===email && u.password===pass);
+  if(!user){showNotification('Invalid credentials. Please check email and password.','error');return;}
+  setUser({...user});
+  if(user.role !== selectedRole){
+    showNotification(`Signed in as ${user.role}. Redirecting to the correct dashboard.`,'info');
+  }
+  if(user.role==='admin'){
+    showPage('admin');
+    return;
+  }
+  if(user.role==='driver' && !user.verified){
+    showPage('driver-onboard');
+    showNotification('Driver verification pending. Complete your application to publish rides.','warning');
+    return;
+  }
+  showPage('dashboard');
+  showNotification('Welcome back! Enjoy your rides ✨','success');
+}
+
+function handleSignup(){
+  const role = document.getElementById('signup-role').value;
+  const name=document.getElementById('signup-name').value.trim();
+  const email=document.getElementById('signup-email').value.trim();
+  const phone=document.getElementById('signup-phone').value.trim();
+  const pass=document.getElementById('signup-pass').value;
+  if(!name||!email||!phone||!pass){showNotification('Please fill all fields','error');return;}
+  if(pass.length<8){showNotification('Password must be at least 8 characters','error');return;}
+  if(USERS.some(u=>u.email===email)){showNotification('This email is already registered','error');return;}
+  const driverInfo = role==='driver' ? {
+    license:document.getElementById('signup-license').value.trim(),
+    vehicle:document.getElementById('signup-vehicle').value.trim(),
+    insurance:document.getElementById('signup-insurance').value.trim(),
+  } : {};
+  if(role==='driver' && (!driverInfo.license||!driverInfo.vehicle||!driverInfo.insurance)){
+    showNotification('Complete your driver credentials to register','error');
+    return;
+  }
+  const newUser = {
+    id: USERS.length+1,
+    name,
+    email,
+    password: pass,
+    role,
+    verified: role==='driver' ? false : true,
+    verificationStatus: role==='driver' ? 'draft' : 'verified',
+    phone,
+    license: driverInfo.license || '',
+    vehicle: driverInfo.vehicle || '',
+    insurance: driverInfo.insurance || '',
+    rides: 0,
+    savings: 0,
+    city:'Hyderabad'
+  };
+  USERS.push(newUser);
+  setUser({...newUser});
+  if(role==='driver'){
+    showPage('driver-onboard');
+    showNotification('Driver account created. Complete verification to start offering rides.','info');
+    return;
+  }
+  showPage('dashboard');
+  showNotification('Welcome to RideVogue! 🎉','success');
+}
+
+function handleGuestLogin(){
+  setUser({name:'Guest User',email:'guest@ridevogue.com',avatar:'GU',city:'Hyderabad',rides:0,savings:0,role:'rider',verified:true});
+  showPage('dashboard');
+  showNotification('Signed in as Guest 👋','info');
+}
+
+function handleHeroCTA(){
+  if(!currentUser){ showPage('auth'); return; }
+  if(currentUser.role==='driver'){
+    if(currentUser.verified) showPage('post');
+    else showPage('driver-onboard');
+    return;
+  }
+  showPage('driver-onboard');
+}
+
+function sendDriverOTP(){
+  const otp = '123456';
+  window._driverOTP = otp;
+  const otpInput = document.getElementById('onboard-otp');
+  if(otpInput){
+    otpInput.value = otp;
+  }
+  showNotification(`✅ OTP sent to ${currentUser?.phone||'your phone'}: ${otp}`, 'info');
+}
+
+function renderDriverOnboard(){
+  const statusEl = document.getElementById('driver-onboard-status');
+  const formEl = document.getElementById('driverOnboardForm');
+  if(!currentUser){ statusEl.innerHTML='<div class="card" style="padding:18px;background:var(--surface2);">Please sign in to continue driver onboarding.</div>'; formEl.style.display='none'; return; }
+  if(currentUser.role!=='driver'){
+    statusEl.innerHTML=`<div class="card" style="padding:18px;background:var(--surface2);">You are currently a rider. Create a verified driver account by signing up as a driver to submit documents and publish rides.</div><div style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="showPage('auth');switchAuthTab('signup');document.getElementById('signup-role').value='driver';toggleSignupRole();">Sign Up as Driver</button></div>`;
+    formEl.style.display='none';
+    return;
+  }
+  if(currentUser.verified){
+    statusEl.innerHTML=`<div class="card" style="padding:18px;background:var(--green-bg);border:1px solid var(--green);color:var(--green);">Your driver account is approved. You can now publish rides directly to the Find Ride dashboard. <button class="btn btn-primary btn-sm" onclick="showPage('post')">Post Ride</button></div>`;
+    formEl.style.display='none';
+    return;
+  }
+  const label = currentUser.verificationStatus==='pending' ? 'Application pending approval by admin.' : currentUser.verificationStatus==='rejected' ? 'Application rejected. Update your documents and resubmit.' : 'Start your verification by submitting your documents and OTP.';
+  statusEl.innerHTML=`<div class="card" style="padding:18px;background:var(--surface2);">${label}</div>`;
+  formEl.style.display='block';
+  document.getElementById('onboard-license').value = currentUser.license || '';
+  document.getElementById('onboard-insurance').value = currentUser.insurance || '';
+}
+
+function submitDriverApplication(){
+  if(!currentUser){ showNotification('Please sign in as a driver to submit application.','error'); return; }
+  const otp = document.getElementById('onboard-otp').value.trim();
+  const govtid = document.getElementById('onboard-govtid').value.trim();
+  const license = document.getElementById('onboard-license').value.trim();
+  const rc = document.getElementById('onboard-rc').value.trim();
+  const insurance = document.getElementById('onboard-insurance').value.trim();
+  const selfie = document.getElementById('onboard-selfie').value.trim();
+  if(otp!==window._driverOTP){ showNotification('Invalid OTP. Request a new code and try again.','error'); return; }
+  if(!govtid||!license||!rc||!insurance||!selfie){ showNotification('Complete all onboarding fields before submission.','error'); return; }
+  currentUser.govtId = govtid;
+  currentUser.license = license;
+  currentUser.rc = rc;
+  currentUser.insurance = insurance;
+  currentUser.selfie = selfie;
+  currentUser.verificationStatus = 'approved';
+  currentUser.verified = true;
+  showNotification('✅ You are verified! Start posting rides now.','success');
+  renderDriverOnboard();
+  setTimeout(()=>showPage('post'), 500);
+}
+
+function renderAdminPage(){
+  const pending = USERS.filter(u=>u.role==='driver' && u.verificationStatus==='pending');
+  document.getElementById('admin-pending-count').textContent = pending.length;
+  document.getElementById('admin-active-rides').textContent = RIDES_DB.length;
+  document.getElementById('admin-alert-count').textContent = FRAUD_ALERTS.length;
+  const approvals = document.getElementById('admin-approvals-body');
+  approvals.innerHTML = pending.map(driver=>`
+    <tr>
+      <td style="padding:14px">${driver.name}</td>
+      <td style="padding:14px">${driver.phone||'N/A'}</td>
+      <td style="padding:14px"><span class="badge badge-purple">${driver.verificationStatus}</span></td>
+      <td style="padding:14px;font-size:13px;color:var(--text-muted)">License: ${driver.license || 'N/A'}<br>ID: ${driver.govtId || 'N/A'}<br>RC: ${driver.rc || 'N/A'}</td>
+      <td style="padding:14px"><button class="btn btn-primary btn-sm" onclick="approveDriver(${driver.id})">Approve</button><button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="rejectDriver(${driver.id})">Reject</button></td>
+    </tr>`).join('');
+  const monitor = document.getElementById('admin-ride-monitor');
+  monitor.innerHTML = RIDES_DB.slice(0,4).map(ride=>`
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:16px">
+      <div><strong>${ride.from} → ${ride.to}</strong><div style="font-size:13px;color:var(--text-muted)">${ride.driver} · ${ride.date} · ₹${ride.price}</div></div>
+      <span class="badge ${ride.verified?'badge-green':'badge-red'}">${ride.verified?'Live':'Review'}</span>
+    </div>`).join('');
+  const fraudEl = document.getElementById('admin-fraud-list');
+  fraudEl.innerHTML = FRAUD_ALERTS.map(alert=>`
+    <div class="card" style="margin-bottom:12px;padding:16px;background:var(--surface2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div style="font-weight:600">${alert.title}</div><span class="badge badge-red">Attention</span></div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:8px">${alert.detail}</div>
+    </div>`).join('');
+}
+
+function approveDriver(id){
+  const driver = USERS.find(u=>u.id===id);
+  if(!driver) return;
+  driver.verified=true;
+  driver.verificationStatus='approved';
+  if(currentUser?.id===driver.id){
+    currentUser = driver;
+    updateNavForRole();
+  }
+  showNotification(`${driver.name} has been approved.`, 'success');
+  renderAdminPage();
+}
+
+function rejectDriver(id){
+  const driver = USERS.find(u=>u.id===id);
+  if(!driver) return;
+  driver.verified=false;
+  driver.verificationStatus='rejected';
+  if(currentUser?.id===driver.id){
+    currentUser = driver;
+    updateNavForRole();
+  }
+  showNotification(`${driver.name} has been rejected.`, 'error');
+  renderAdminPage();
+}
+
+function updateNavForRole(){
+  const navOnboard = document.getElementById('nav-onboard');
+  const navPost = document.getElementById('nav-post');
+  const navAdmin = document.getElementById('nav-admin');
+  const navDashboard = document.getElementById('nav-dashboard');
+  if(!currentUser){
+    navOnboard.style.display='none';
+    navPost.style.display='none';
+    navAdmin.style.display='none';
+    navDashboard.style.display='none';
+    return;
+  }
+  navDashboard.style.display='inline-flex';
+  navAdmin.style.display = currentUser.role==='admin' ? 'inline-flex' : 'none';
+  navPost.style.display = currentUser.role==='driver' && currentUser.verified ? 'inline-flex' : 'none';
+  navPost.textContent = 'Post Ride';
+  if(currentUser.role==='driver' && !currentUser.verified){
+    navOnboard.style.display='inline-flex';
+    navOnboard.textContent='Driver Onboarding';
+  } else if(currentUser.role==='rider'){
+    navOnboard.style.display='inline-flex';
+    navOnboard.textContent='Become Driver';
+  } else {
+    navOnboard.style.display='none';
+  }
+}
+
+function handleLogout(){
+  currentUser=null;
+  document.getElementById('nav-auth-area').innerHTML='<button class="btn btn-primary btn-sm" onclick="showPage(\'auth\')">Sign In</button>';
+  document.getElementById('nav-dashboard').style.display='none';
+  updateNavForRole();
+  showPage('home');
+  showNotification('You have been signed out','info');
+}
+
+function openDriverVerifyModal(){
+  if(!currentUser || currentUser.role !== 'driver'){
+    showNotification('Only drivers can verify credentials','error');
+    return;
+  }
+  document.getElementById('verify-license').value = currentUser.license || '';
+  document.getElementById('verify-vehicle').value = currentUser.vehicle || '';
+  document.getElementById('verify-insurance').value = currentUser.insurance || '';
+  document.getElementById('driverVerifyModal').style.display = 'grid';
+}
+
+function closeDriverVerifyModal(){
+  document.getElementById('driverVerifyModal').style.display = 'none';
+}
+
+function verifyDriverCredentials(){
+  if(!currentUser) return;
+  currentUser.verified = true;
+  currentUser.verificationStatus = 'approved';
+  closeDriverVerifyModal();
+  const driverBanner = document.getElementById('driver-verification-banner');
+  if(driverBanner) driverBanner.style.display = 'none';
+  showNotification('Driver credentials verified. You can now publish rides.','success');
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  if(!currentUser) return;
+  // Sidebar
+  document.getElementById('sb-avatar').textContent=currentUser.avatar;
+  document.getElementById('sb-name').textContent=currentUser.name;
+  // Dash header
+  document.getElementById('dash-name').textContent=currentUser.name.split(' ')[0];
+  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  // Metrics
+  document.getElementById('m-rides').textContent=currentUser.rides;
+  document.getElementById('m-savings').textContent='₹'+currentUser.savings.toLocaleString();
+  // Upcoming rides
+  const upcoming = MY_BOOKINGS.filter(b=>b.status==='upcoming');
+  document.getElementById('m-upcoming').textContent=upcoming.length;
+  const upcomingEl = document.getElementById('upcoming-rides-dash');
+  if(upcomingEl){
+    if(upcoming.length===0) upcomingEl.innerHTML='<div style="color:var(--text-muted);font-size:14px;padding:1rem 0">No upcoming rides. <span style="color:var(--gold);cursor:pointer" onclick="showPage(\'search\')">Find one →</span></div>';
+    else upcomingEl.innerHTML = upcoming.map(b=>`
+      <div class="card card-gold" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-weight:600">${b.from} → ${b.to}</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">with ${b.driver} · ${b.date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold)">₹${b.price}</div>
+          <span class="badge badge-green">Confirmed</span>
+        </div>
+      </div>`).join('');
+  }
+  // Bookings table
+  const tbody=document.getElementById('bookings-tbody');
+  if(tbody) tbody.innerHTML = MY_BOOKINGS.map(b=>`
+    <tr>
+      <td><strong>${b.from} → ${b.to}</strong></td>
+      <td>${b.date}</td>
+      <td>${b.driver}</td>
+      <td style="font-weight:600">₹${b.price}</td>
+      <td><span class="badge ${b.status==='upcoming'?'badge-green':'badge-gold'}">${b.status}</span></td>
+      <td>${b.status==='upcoming' ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="trackRide(${b.id})">Track</button><button class="btn btn-danger btn-sm" onclick="cancelRide(${b.id})">Cancel</button></div>` : `<span style="color:var(--text-muted);font-size:13px">Completed</span>`}</td>
+    </tr>`).join('');
+  // Profile
+  document.getElementById('profile-avatar-big').textContent=currentUser.avatar;
+  document.getElementById('profile-name-big').textContent=currentUser.name;
+  document.getElementById('profile-email-big').textContent=currentUser.email;
+  document.getElementById('profile-name-inp').value=currentUser.name;
+  document.getElementById('profile-email-inp').value=currentUser.email;
+  document.getElementById('profile-city-inp').value=currentUser.city||'Hyderabad';
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-view').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('sb-'+tab).classList.add('active');
+  if(tab==='bookings'||tab==='profile') renderDashboard();
+}
+
+function cancelRide(id){
+  const idx=MY_BOOKINGS.findIndex(b=>b.id===id);
+  if(idx>-1) MY_BOOKINGS[idx].status='cancelled';
+  renderDashboard();
+  showNotification('Ride cancelled successfully','info');
+}
+
+function saveProfile(){
+  if(!currentUser) return;
+  currentUser.name=document.getElementById('profile-name-inp').value||currentUser.name;
+  currentUser.email=document.getElementById('profile-email-inp').value||currentUser.email;
+  currentUser.city=document.getElementById('profile-city-inp').value||currentUser.city;
+  renderDashboard();
+  document.getElementById('sb-name').textContent=currentUser.name;
+  showNotification('Profile updated successfully ✅','success');
+}
+
+// ===== POST RIDE =====
+let postCurrentStep = 1;
+function postStep(step){
+  const from=document.getElementById('p-from')?.value.trim();
+  const to=document.getElementById('p-to')?.value.trim();
+  const date=document.getElementById('p-date')?.value;
+  const time=document.getElementById('p-time')?.value;
+  if(step===2&&(!from||!to||!date||!time)){showNotification('Please fill all route fields','error');return;}
+  if(step===3){
+    const price=document.getElementById('p-price')?.value;
+    if(!price){showNotification('Please enter a price per seat','error');return;}
+    // Build review
+    document.getElementById('post-review-box').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px">
+        <div><span style="color:var(--text-muted)">From:</span> <strong>${from}</strong></div>
+        <div><span style="color:var(--text-muted)">To:</span> <strong>${to}</strong></div>
+        <div><span style="color:var(--text-muted)">Date:</span> <strong>${new Date(date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</strong></div>
+        <div><span style="color:var(--text-muted)">Time:</span> <strong>${document.getElementById('p-time').value}</strong></div>
+        <div><span style="color:var(--text-muted)">Seats:</span> <strong>${document.getElementById('p-seats').value}</strong></div>
+        <div><span style="color:var(--text-muted)">Price/seat:</span> <strong style="color:var(--gold)">₹${price}</strong></div>
+      </div>`;
+  }
+  for(let i=1;i<=3;i++){
+    document.getElementById('post-step-'+i).style.display=(i===step)?'block':'none';
+    const num=document.getElementById('step-'+i+'-num');
+    const lbl=document.getElementById('step-'+i+'-label');
+    if(i<step){ num.className='step-num done'; num.textContent='✓'; }
+    else if(i===step){ num.className='step-num current'; num.textContent=i; lbl.className='step-label current'; }
+    else{ num.className='step-num pending'; num.textContent=i; lbl.className='step-label'; }
+    if(i<3){ const line=document.getElementById('line-'+i); if(line) line.className='step-line'+(i<step?' done':''); }
+  }
+  postCurrentStep=step;
+}
+
+function updatePricePreview(){
+  const price=parseInt(document.getElementById('p-price')?.value)||0;
+  const seats=parseInt(document.getElementById('p-seats')?.value)||1;
+  const preview=document.getElementById('price-preview');
+  if(price>0){
+    preview.style.display='flex';
+    document.getElementById('pp-seats').textContent=seats;
+    document.getElementById('pp-price').textContent=price;
+    document.getElementById('pp-total').textContent=(price*seats).toLocaleString();
+  } else { preview.style.display='none'; }
+}
+
+function submitRide(){
+  if(!currentUser){ showPage('auth'); showNotification('Login as a driver to publish a ride','error'); return; }
+  if(currentUser.role !== 'driver'){ showNotification('Only verified drivers can publish rides. Create a driver account to offer rides.','error'); return; }
+  if(!currentUser.verified){
+    showNotification('Driver credentials required before publishing. Verify now.','warning');
+    openDriverVerifyModal();
+    return;
+  }
+  const newRide={
+    id:RIDES_DB.length+1,
+    driver:currentUser.name,
+    avatar:currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase(),
+    from:document.getElementById('p-from').value,
+    to:document.getElementById('p-to').value,
+    date:document.getElementById('p-date').value,
+    time:document.getElementById('p-time').value,
+    seats:parseInt(document.getElementById('p-seats').value),
+    price:parseInt(document.getElementById('p-price').value),
+    rating:5.0,
+    car:document.getElementById('p-car').value||'Personal Car',
+    reviews:0,
+    tag:'Verified driver'
+  };
+  RIDES_DB.push(newRide);
+  ridesData = [...RIDES_DB];
+  showNotification('🚀 Your verified ride is now live!','success');
+  ['p-from','p-to','p-date','p-time','p-price','p-car','p-notes'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  postStep(1);
+  showPage('home');
+}
+
+// ===== DARK MODE =====
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  const isDark=document.body.classList.contains('dark');
+  document.getElementById('dark-btn').textContent=isDark?'☀️':'🌙';
+}
+
+// ===== NOTIFICATION =====
+function showNotification(msg,type='success'){
+  const el=document.getElementById('notification');
+  el.textContent=msg;
+  el.className='show '+type;
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>{el.className='';},3200);
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded',()=>{
+  renderFeaturedRides();
+  renderTestimonials();
+  setTimeout(animateStats,400);
+  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  // Set min date to today for date inputs
+  const today=new Date().toISOString().split('T')[0];
+  document.querySelectorAll('input[type="date"]').forEach(d=>d.min=today);
+});
+
+
+
+
+</script>
+</body>
+</html>
