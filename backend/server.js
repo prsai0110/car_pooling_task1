@@ -1,390 +1,490 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const path = require("path");
 const pool = require("./db");
 
 const app = express();
 const PORT = 5000;
 
-// MIDDLEWARE
+// ================= MIDDLEWARE =================
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
-// HEALTH CHECK
-app.get("/health", (req, res) => {
-    res.json({ status: "Server running", port: PORT });
+// ================= HOME ROUTE =================
+app.get("/", (req, res) => {
+    res.send("Car Pooling Backend Running Successfully");
 });
 
-// ============ USER ENDPOINTS ============
+// ================= HEALTH CHECK =================
+app.get("/health", (req, res) => {
+    res.json({
+        status: "Server running",
+        port: PORT
+    });
+});
 
-// REGISTER USER
+// ================= REGISTER USER =================
 app.post("/register", async (req, res) => {
+    let connection;
+
     try {
-        const { name, email, password, role } = req.body;
+        const {
+            name,
+            email,
+            password,
+            role,
+            phone,
+            city,
+            license,
+            vehicle,
+            insurance
+        } = req.body;
 
         if (!name || !email || !password) {
-            return res.status(400).json({ error: "Missing required fields" });
+            return res.status(400).json({
+                error: "Missing required fields"
+            });
         }
 
-        const connection = await pool.getConnection();
-        
-        // Check if user exists
+        connection = await pool.getConnection();
+
+        // Check existing user
         const [existing] = await connection.query(
             "SELECT id FROM users WHERE email = ?",
             [email]
         );
 
         if (existing.length > 0) {
-            connection.release();
-            return res.status(400).json({ error: "Email already registered" });
+            return res.status(400).json({
+                error: "Email already registered"
+            });
         }
 
-        // Insert new user
+        // Insert user
         const [result] = await connection.query(
-            "INSERT INTO users (name, email, password, role, created_at) VALUES (?, ?, ?, ?, NOW())",
-            [name, email, password, role || "rider"]
+            `INSERT INTO users
+            (name, email, password, role, phone, city, license, vehicle, insurance, verified, verificationStatus, rides, savings, avatar, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [
+                name,
+                email,
+                password,
+                role || "rider",
+                phone || "",
+                city || "Hyderabad",
+                license || "",
+                vehicle || "",
+                insurance || "",
+                role === "driver" ? false : true,
+                role === "driver" ? "pending" : "verified",
+                0,
+                0,
+                name
+                    ? name.split(" ").map(word => word[0]).join("").slice(0, 2).toUpperCase()
+                    : "US"
+            ]
         );
 
-        connection.release();
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: "User registered successfully",
-            userId: result.insertId 
+            userId: result.insertId
         });
+
     } catch (error) {
-        console.error("Register error:", error);
-        res.status(500).json({ error: "Registration failed" });
+        console.error("Register Error:", error);
+
+        res.status(500).json({
+            error: "Registration failed"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-// LOGIN USER
+// ================= LOGIN USER =================
 app.post("/login", async (req, res) => {
+    let connection;
+
     try {
         const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ error: "Email and password required" });
-        }
+        connection = await pool.getConnection();
 
-        const connection = await pool.getConnection();
         const [users] = await connection.query(
-            "SELECT id, name, email, role FROM users WHERE email = ? AND password = ?",
+            "SELECT * FROM users WHERE email = ? AND password = ?",
             [email, password]
         );
-        connection.release();
 
         if (users.length === 0) {
-            return res.status(401).json({ error: "Invalid credentials" });
+            return res.status(401).json({
+                error: "Invalid credentials"
+            });
         }
 
         const user = users[0];
+
         res.json({
             success: true,
-            message: "Login successful",
-            userId: user.id,
+            id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role
+            role: user.role,
+            phone: user.phone,
+            city: user.city,
+            avatar: user.avatar,
+            verified: user.verified,
+            verificationStatus: user.verificationStatus
         });
+
     } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ error: "Login failed" });
+        console.error("Login Error:", error);
+
+        res.status(500).json({
+            error: "Login failed"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-// GET USER BY ID
-app.get("/user/:id", async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        const [users] = await connection.query(
-            "SELECT id, name, email, role FROM users WHERE id = ?",
-            [req.params.id]
-        );
-        connection.release();
+// ================= DRIVER APPLICATION =================
+// ================= VERIFY DRIVER =================
+app.post("/verifyDriver", async (req, res) => {
+    let connection;
 
-        if (users.length === 0) {
-            return res.status(404).json({ error: "User not found" });
+    try {
+        const {
+            user_id,
+            license,
+            vehicle,
+            insurance
+        } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({
+                error: "User ID required"
+            });
         }
 
-        res.json(users[0]);
+        connection = await pool.getConnection();
+
+        await connection.query(
+            `UPDATE users 
+             SET verified = ?, 
+                 verificationStatus = ?, 
+                 license = ?, 
+                 vehicle = ?, 
+                 insurance = ?
+             WHERE id = ?`,
+            [
+                true,
+                "approved",
+                license || "",
+                vehicle || "",
+                insurance || "",
+                user_id
+            ]
+        );
+
+        const [users] = await connection.query(
+            "SELECT * FROM users WHERE id = ?",
+            [user_id]
+        );
+
+        res.json({
+            success: true,
+            message: "Driver verified successfully",
+            user: users[0]
+        });
+
     } catch (error) {
-        console.error("Get user error:", error);
-        res.status(500).json({ error: "Failed to fetch user" });
+        console.error("Verify Driver Error:", error);
+
+        res.status(500).json({
+            error: "Driver verification failed"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
-
-// ============ RIDE ENDPOINTS ============
-
-// POST A NEW RIDE
+// ================= ADD RIDE =================
 app.post("/addRide", async (req, res) => {
+    let connection;
+
     try {
-        const { 
-            driver_id, 
-            driver_name, 
-            source, 
-            destination, 
-            seats, 
-            price, 
+        const {
+            driver_id,
+            driver_name,
+            source,
+            destination,
+            seats,
+            price,
             travel_date,
             car_model,
             car_plate
         } = req.body;
 
-        if (!driver_id || !source || !destination || !seats || !price || !travel_date) {
-            return res.status(400).json({ error: "Missing required fields" });
-        }
+        connection = await pool.getConnection();
 
-        const connection = await pool.getConnection();
         const [result] = await connection.query(
-            `INSERT INTO rides 
-            (driver_id, driver_name, source, destination, seats, price, travel_date, car_model, car_plate, status, created_at) 
+            `INSERT INTO rides
+            (driver_id, driver_name, source, destination, seats, price, travel_date, car_model, car_plate, status, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [driver_id, driver_name, source, destination, seats, price, travel_date, car_model || null, car_plate || null, "active"]
+            [
+                driver_id,
+                driver_name,
+                source,
+                destination,
+                seats,
+                price,
+                travel_date,
+                car_model || "",
+                car_plate || "",
+                "active"
+            ]
         );
 
-        connection.release();
         res.json({
             success: true,
-            message: "Ride posted successfully",
             rideId: result.insertId
         });
+
     } catch (error) {
-        console.error("Add ride error:", error);
-        res.status(500).json({ error: "Failed to post ride" });
+        console.error("Add Ride Error:", error);
+
+        res.status(500).json({
+            error: "Failed to add ride"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-// GET ALL ACTIVE RIDES
+// ================= GET RIDES =================
 app.get("/getRides", async (req, res) => {
+    let connection;
+
     try {
-        const connection = await pool.getConnection();
+        connection = await pool.getConnection();
+
         const [rides] = await connection.query(
             "SELECT * FROM rides WHERE status = 'active' ORDER BY travel_date ASC"
         );
-        connection.release();
 
         res.json(rides);
+
     } catch (error) {
-        console.error("Get rides error:", error);
-        res.status(500).json({ error: "Failed to fetch rides" });
+        console.error("Get Rides Error:", error);
+
+        res.status(500).json({
+            error: "Failed to fetch rides"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-// SEARCH RIDES BY SOURCE AND DESTINATION
-app.get("/searchRides", async (req, res) => {
+// ================= BOOK RIDE =================
+app.post("/bookRide", async (req, res) => {
+    let connection;
+
     try {
-        const { source, destination, date } = req.query;
+        const {
+            ride_id,
+            rider_id,
+            rider_name
+        } = req.body;
 
-        let query = "SELECT * FROM rides WHERE status = 'active'";
-        const params = [];
+        connection = await pool.getConnection();
 
-        if (source) {
-            query += " AND LOWER(source) LIKE LOWER(?)";
-            params.push(`%${source}%`);
-        }
-
-        if (destination) {
-            query += " AND LOWER(destination) LIKE LOWER(?)";
-            params.push(`%${destination}%`);
-        }
-
-        if (date) {
-            query += " AND DATE(travel_date) = ?";
-            params.push(date);
-        }
-
-        query += " ORDER BY travel_date ASC";
-
-        const connection = await pool.getConnection();
-        const [rides] = await connection.query(query, params);
-        connection.release();
-
-        res.json(rides);
-    } catch (error) {
-        console.error("Search rides error:", error);
-        res.status(500).json({ error: "Failed to search rides" });
-    }
-});
-
-// GET RIDE BY ID
-app.get("/ride/:id", async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
         const [rides] = await connection.query(
             "SELECT * FROM rides WHERE id = ?",
-            [req.params.id]
-        );
-        connection.release();
-
-        if (rides.length === 0) {
-            return res.status(404).json({ error: "Ride not found" });
-        }
-
-        res.json(rides[0]);
-    } catch (error) {
-        console.error("Get ride error:", error);
-        res.status(500).json({ error: "Failed to fetch ride" });
-    }
-});
-
-// GET USER'S RIDES (Driver's Posted Rides)
-app.get("/myRides/:driver_id", async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        const [rides] = await connection.query(
-            "SELECT * FROM rides WHERE driver_id = ? ORDER BY travel_date DESC",
-            [req.params.driver_id]
-        );
-        connection.release();
-
-        res.json(rides);
-    } catch (error) {
-        console.error("Get my rides error:", error);
-        res.status(500).json({ error: "Failed to fetch your rides" });
-    }
-});
-
-// ============ BOOKING ENDPOINTS ============
-
-// BOOK A RIDE
-app.post("/bookRide", async (req, res) => {
-    try {
-        const { ride_id, rider_id, rider_name } = req.body;
-
-        if (!ride_id || !rider_id || !rider_name) {
-            return res.status(400).json({ error: "Missing required fields" });
-        }
-
-        const connection = await pool.getConnection();
-
-        // Check if ride exists and has available seats
-        const [rides] = await connection.query(
-            "SELECT seats FROM rides WHERE id = ? AND status = 'active'",
             [ride_id]
         );
 
         if (rides.length === 0) {
-            connection.release();
-            return res.status(404).json({ error: "Ride not found or inactive" });
+            return res.status(404).json({
+                error: "Ride not found"
+            });
         }
 
         if (rides[0].seats <= 0) {
-            connection.release();
-            return res.status(400).json({ error: "No seats available" });
+            return res.status(400).json({
+                error: "No seats available"
+            });
         }
 
-        // Check if already booked
-        const [existing] = await connection.query(
-            "SELECT id FROM bookings WHERE ride_id = ? AND rider_id = ?",
-            [ride_id, rider_id]
-        );
-
-        if (existing.length > 0) {
-            connection.release();
-            return res.status(400).json({ error: "Already booked this ride" });
-        }
-
-        // Create booking
+        // Insert booking
         const [result] = await connection.query(
-            "INSERT INTO bookings (ride_id, rider_id, rider_name, status, created_at) VALUES (?, ?, ?, ?, NOW())",
-            [ride_id, rider_id, rider_name, "confirmed"]
+            `INSERT INTO bookings
+            (ride_id, rider_id, rider_name, status, created_at)
+            VALUES (?, ?, ?, ?, NOW())`,
+            [
+                ride_id,
+                rider_id,
+                rider_name,
+                "confirmed"
+            ]
         );
 
-        // Update available seats
+        // Reduce seats
         await connection.query(
             "UPDATE rides SET seats = seats - 1 WHERE id = ?",
             [ride_id]
         );
 
-        connection.release();
         res.json({
             success: true,
-            message: "Ride booked successfully",
             bookingId: result.insertId
         });
+
     } catch (error) {
-        console.error("Book ride error:", error);
-        res.status(500).json({ error: "Failed to book ride" });
+        console.error("Book Ride Error:", error);
+
+        res.status(500).json({
+            error: "Booking failed"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-// GET BOOKINGS FOR A RIDER
+// ================= MY BOOKINGS =================
 app.get("/myBookings/:rider_id", async (req, res) => {
+    let connection;
+
     try {
-        const connection = await pool.getConnection();
+        connection = await pool.getConnection();
+
         const [bookings] = await connection.query(
-            `SELECT b.*, r.source, r.destination, r.travel_date, r.price, r.driver_name, r.car_model 
-            FROM bookings b 
-            JOIN rides r ON b.ride_id = r.id 
-            WHERE b.rider_id = ? 
-            ORDER BY r.travel_date DESC`,
+            `SELECT b.*, r.source, r.destination, r.travel_date, r.price
+            FROM bookings b
+            JOIN rides r ON b.ride_id = r.id
+            WHERE b.rider_id = ?`,
             [req.params.rider_id]
         );
-        connection.release();
 
         res.json(bookings);
+
     } catch (error) {
-        console.error("Get my bookings error:", error);
-        res.status(500).json({ error: "Failed to fetch bookings" });
+        console.error("Bookings Error:", error);
+
+        res.status(500).json({
+            error: "Failed to fetch bookings"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+// ================= DRIVER RIDES =================
+app.get("/myDriverRides/:driver_id", async (req, res) => {
+
+    let connection;
+
+    try {
+
+        connection = await pool.getConnection();
+
+        const [rides] = await connection.query(
+
+            `SELECT 
+                r.*,
+                b.rider_name,
+                b.status AS booking_status
+             FROM rides r
+             LEFT JOIN bookings b
+             ON r.id = b.ride_id
+             WHERE r.driver_id = ?`,
+
+            [req.params.driver_id]
+        );
+
+        res.json(rides);
+
+    } catch (error) {
+
+        console.error("Driver Rides Error:", error);
+
+        res.status(500).json({
+            error: "Failed to fetch driver rides"
+        });
+
+    } finally {
+
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
-// GET BOOKINGS FOR A RIDE (Driver's View)
-app.get("/rideBookings/:ride_id", async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        const [bookings] = await connection.query(
-            "SELECT * FROM bookings WHERE ride_id = ? ORDER BY created_at DESC",
-            [req.params.ride_id]
-        );
-        connection.release();
+// ================= ERROR HANDLER =================
+app.use((err, req, res, next) => {
+    console.error(err);
 
-        res.json(bookings);
-    } catch (error) {
-        console.error("Get ride bookings error:", error);
-        res.status(500).json({ error: "Failed to fetch ride bookings" });
-    }
+    res.status(500).json({
+        error: "Internal Server Error"
+    });
 });
+app.post("/verifyDriver", async (req, res) => {
+    let connection;
 
-// CANCEL BOOKING
-app.post("/cancelBooking", async (req, res) => {
     try {
-        const { booking_id, ride_id } = req.body;
+        const { user_id, license, vehicle, insurance } = req.body;
 
-        const connection = await pool.getConnection();
+        connection = await pool.getConnection();
 
-        // Update booking status
         await connection.query(
-            "UPDATE bookings SET status = 'cancelled' WHERE id = ?",
-            [booking_id]
+            `UPDATE users 
+             SET verified = ?, verificationStatus = ?, 
+                 license = ?, vehicle = ?, insurance = ?
+             WHERE id = ?`,
+            [true, "approved", license, vehicle, insurance, user_id]
         );
 
-        // Return seat to ride
-        await connection.query(
-            "UPDATE rides SET seats = seats + 1 WHERE id = ?",
-            [ride_id]
-        );
-
-        connection.release();
         res.json({
             success: true,
-            message: "Booking cancelled successfully"
+            message: "Driver verified successfully"
         });
+
     } catch (error) {
-        console.error("Cancel booking error:", error);
-        res.status(500).json({ error: "Failed to cancel booking" });
+        console.error(error);
+
+        res.status(500).json({
+            error: "Verification failed"
+        });
+
+    } finally {
+        if (connection) connection.release();
     }
 });
-
-// ============ ERROR HANDLER ============
-app.use((err, req, res, next) => {
-    console.error("Unhandled error:", err);
-    res.status(500).json({ error: "Internal server error" });
-});
-
-// START SERVER
+// ================= START SERVER =================
 app.listen(PORT, () => {
+    console.log("✓ Connected to MySQL Database");
     console.log(`✓ Server running on port ${PORT}`);
     console.log(`✓ API endpoint: http://localhost:${PORT}`);
 });
