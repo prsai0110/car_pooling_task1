@@ -476,6 +476,14 @@ footer{background:var(--surface2);border-top:1px solid var(--border);padding:3re
       <div class="rides-grid" id="featured-rides"></div>
     </div>
   </div>
+  <h2>My Rides</h2>
+
+<div class="rides-container" id="driver-rides"></div>
+<section>
+    <h2>Upcoming Rides</h2>
+
+    <div id="driver-rides"></div>
+</section>
 
   <!-- Testimonials -->
   <div class="section" style="background:var(--surface2)">
@@ -1053,7 +1061,8 @@ footer{background:var(--surface2);border-top:1px solid var(--border);padding:3re
             <thead><tr>
               <th>Route</th><th>Date</th><th>Driver</th><th>Price</th><th>Status</th><th>Action</th>
             </tr></thead>
-            <tbody id="bookings-tbody"></tbody>
+             <tbody id="bookingsTable"></tbody>
+             
           </table>
         </div>
       </div>
@@ -1064,12 +1073,7 @@ footer{background:var(--surface2);border-top:1px solid var(--border);padding:3re
           <div class="dash-greeting">Rides I Offered</div>
           <div class="dash-date">Manage your posted rides</div>
         </div>
-        <div style="text-align:center;padding:3rem;color:var(--text-muted)">
-          <div style="font-size:48px;margin-bottom:12px">🚗</div>
-          <div style="font-weight:600;margin-bottom:8px">No rides posted yet</div>
-          <div style="font-size:14px;margin-bottom:20px">Share your journey and earn while helping others travel</div>
-          <button class="btn btn-primary" onclick="showPage('post')">Post a Ride</button>
-        </div>
+        <div id="my-rides-list"></div>
       </div>
 
       <!-- Profile Tab -->
@@ -1165,7 +1169,7 @@ const TESTIMONIALS_DB = [
   {name:"Ishita P.",city:"Delhi",text:"As a solo traveler, safety is my priority. RideVogue gives me that plus style!",avatar:"IP",stars:5},
 ];
 
-const MY_BOOKINGS = [
+let MY_BOOKINGS = [
   {id:1,from:"Hyderabad",to:"Bangalore",date:"May 20, 2026",status:"completed",price:850,driver:"Arjun Mehta"},
   {id:2,from:"Mumbai",to:"Pune",date:"May 15, 2026",status:"completed",price:420,driver:"Priya Sharma"},
   {id:3,from:"Hyderabad",to:"Vijayawada",date:"May 26, 2026",status:"upcoming",price:380,driver:"Rahul Singh",otp:"827364",boardingVerified:false},
@@ -1178,15 +1182,61 @@ const FRAUD_ALERTS = [
 
 let currentUser = null;
 
+function upsertUserCache(user) {
+  const normalizedUser = {
+    ...user,
+    id: user.id || user.userId,
+    userId: user.userId || user.id,
+    rides: Number(user.rides || 0),
+    savings: Number(user.savings || 0),
+    verified: Boolean(user.verified),
+    verificationStatus: user.verificationStatus || (user.role === 'driver' ? 'pending' : 'verified'),
+    avatar: user.avatar || (user.name ? user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'U')
+  };
+  const index = USERS.findIndex(entry => entry.id === normalizedUser.id || entry.email === normalizedUser.email);
+  if (index >= 0) USERS[index] = { ...USERS[index], ...normalizedUser };
+  else USERS.push(normalizedUser);
+  return normalizedUser;
+}
+
+function syncCurrentUser(user) {
+  const nextUser = upsertUserCache(user);
+  setUser(nextUser);
+  return nextUser;
+}
+function displayBookings(bookings) {
+
+    const table = document.getElementById("bookingsTable");
+
+    table.innerHTML = "";
+
+    bookings.forEach(booking => {
+
+        table.innerHTML += `
+            <tr>
+                <td>${booking.source} → ${booking.destination}</td>
+                <td>${booking.travel_date}</td>
+                <td>${booking.rider_name}</td>
+                <td>₹${booking.price}</td>
+                <td>${booking.status}</td>
+                <td>
+                    <button>View</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
 function setUser(user){
   const existingUser = USERS.find(u=>u.id===user.id);
   currentUser = existingUser || user;
-  currentUser.avatar = currentUser.avatar || currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  currentUser.userId = currentUser.userId || currentUser.id;
+  currentUser.avatar = currentUser.avatar || (currentUser.name ? currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'U');
   const authArea = document.getElementById('nav-auth-area');
   if(authArea){
     authArea.innerHTML = `<div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="showPage('dashboard');switchTab('profile')">
       <div class="avatar-sm">${currentUser.avatar}</div>
-      <span style="font-size:14px;font-weight:500">${currentUser.name.split(' ')[0]}</span>
+      <span style="font-size:14px;font-weight:500">${(currentUser.name||'').split(' ')[0]}</span>
     </div>`;
   }
   updateNavForRole();
@@ -1195,12 +1245,210 @@ function setUser(user){
 let selectedRide = null;
 let currentFilter = 'all';
 let ridesData = [...RIDES_DB];
+const API_URL = 'http://localhost:5000';
 
+// ===== API HELPERS =====
+async function apiCall(endpoint, method = 'GET', data = null) {
+  try {
+    const options = { method, headers: { 'Content-Type': 'application/json' } };
+    if (data) options.body = JSON.stringify(data);
+    const res = await fetch(`${API_URL}${endpoint}`, options);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `API error: ${res.status}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.error(`API Error [${method} ${endpoint}]:`, err);
+    throw err;
+  }
+}
+
+async function postRideAPI(rideData) {
+  return apiCall('/addRide', 'POST', {
+    driver_id: currentUser.userId,
+    driver_name: currentUser.name,
+    source: rideData.from,
+    destination: rideData.to,
+    seats: rideData.seats,
+    price: rideData.price,
+    travel_date: rideData.date,
+    car_model: rideData.car || null,
+    car_plate: null
+  });
+}
+
+async function searchRidesAPI(from, to, date) {
+  const params = new URLSearchParams();
+  if (from) params.append('source', from);
+  if (to) params.append('destination', to);
+  if (date) params.append('date', date);
+  return apiCall(`/searchRides?${params.toString()}`, 'GET');
+}
+
+async function getRidesAPI() {
+  return apiCall('/getRides', 'GET');
+}
+
+async function bookRideAPI(rideId, riderId, riderName) {
+  return apiCall('/bookRide', 'POST', {
+    ride_id: rideId,
+    rider_id: riderId,
+    rider_name: riderName
+  });
+}
+
+async function cancelBookingAPI(bookingId, rideId) {
+  return apiCall('/cancelBooking', 'POST', {
+    booking_id: bookingId,
+    ride_id: rideId
+  });
+}
+
+async function verifyDriverAPI(payload) {
+  try {
+    const response = await fetch('http://localhost:5000/verifyDriver', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await response.text();
+    console.log(text);
+
+    return JSON.parse(text);
+
+  } catch (error) {
+    console.error("Verify Driver Error:", error);
+    throw error;
+  }
+}
+async function updateProfileAPI(payload) {
+  return apiCall('/updateProfile', 'POST', payload);
+}
+
+async function getMyBookingsAPI(riderId) {
+  return apiCall(`/myBookings/${riderId}`, 'GET');
+}
+
+async function getMyRidesAPI(driverId) {
+  return apiCall(`/myRides/${driverId}`, 'GET');
+}
+async function loadDriverRides() {
+
+    try {
+
+        // GET USER FROM LOCAL STORAGE
+        const currentUser =
+            JSON.parse(localStorage.getItem("currentUser"));
+
+        console.log(currentUser);
+
+        // FETCH DRIVER RIDES
+        const response = await fetch(
+            `http://localhost:5000/myDriverRides/${currentUser.id}`
+        );
+
+        const rides = await response.json();
+
+        console.log(rides);
+
+        // GET HTML CONTAINER
+        const container =
+            document.getElementById("driver-rides");
+
+        // IF NO RIDES
+        if (!rides.length) {
+
+            container.innerHTML = `
+                <p>No upcoming rides</p>
+            `;
+
+            return;
+        }
+
+        // DISPLAY RIDES
+        container.innerHTML = rides.map(r => `
+
+            <div class="card">
+
+                <h3>${r.source} → ${r.destination}</h3>
+
+                <p>Date: ${r.travel_date}</p>
+
+                <p>Price: ₹${r.price}</p>
+
+                <p>Available Seats: ${r.seats}</p>
+
+                <p>
+                    Booked By:
+                    ${r.rider_name || "No bookings yet"}
+                </p>
+
+            </div>
+
+        `).join('');
+
+    } catch (err) {
+
+        console.error(err);
+    }
+}
+
+// CALL FUNCTION
+loadDriverRides();
+   async function loadBookings() {
+
+    try {
+
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+        const response = await fetch(
+            `http://localhost:5000/myBookings/${currentUser.id}`
+        );
+
+        const bookings = await response.json();
+
+        console.log(bookings);
+
+        const table = document.getElementById("bookingsTable");
+
+        if (!bookings.length) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="6">No bookings found</td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        table.innerHTML = bookings.map(b => `
+            <tr>
+                <td>${b.source} → ${b.destination}</td>
+                <td>${b.travel_date}</td>
+                <td>${b.rider_name}</td>
+                <td>₹${b.price}</td>
+                <td>${b.status}</td>
+                <td>
+                    <button>View</button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+
+        console.error(err);
+    }
+}
 // ===== NAVIGATION =====
 function showPage(pageId){
-  if(pageId==='post'){ 
+  if(pageId==='post'){
     if(!currentUser){ showNotification('Please sign in as a driver to publish rides.','error'); return showPage('auth'); }
-    if(currentUser.role !== 'driver'){ showNotification('Only drivers can offer rides. Become a driver first.','error'); return showPage('driver-onboard'); }
+    if(currentUser.role!=='driver'){ showNotification('Only drivers can publish rides.','error'); return; }
     if(!currentUser.verified){ showNotification('Driver verification is required before publishing.','warning'); return showPage('driver-onboard'); }
   }
   if(pageId==='driver-onboard' && !currentUser){ showNotification('Please sign in to continue driver onboarding.','info'); return showPage('auth'); }
@@ -1213,11 +1461,25 @@ function showPage(pageId){
   const navEl = document.getElementById('nav-'+pageId);
   if(navEl) navEl.classList.add('active');
   window.scrollTo(0,0);
-  if(pageId==='search'){ 
-    ridesData = [...RIDES_DB];
-    renderSearchRides(ridesData);
+  if(pageId==='search'){
+    getRidesAPI().then(rides=>{
+      ridesData = rides || [];
+      renderSearchRides(ridesData);
+    }).catch(err=>{
+      console.error('Failed to fetch rides:', err);
+      showNotification('Failed to load rides. Check backend connection.','error');
+      ridesData = [];
+      renderSearchRides([]);
+    });
   }
-  if(pageId==='home'){ renderFeaturedRides(); renderTestimonials(); animateStats(); }
+  if(pageId==='home'){
+    getRidesAPI().then(rides=>{
+      ridesData = rides || [...RIDES_DB];
+      renderFeaturedRides();
+    }).catch(()=>renderFeaturedRides());
+    renderTestimonials();
+    animateStats();
+  }
   if(pageId==='dashboard') renderDashboard();
   if(pageId==='driver-onboard') renderDriverOnboard();
   if(pageId==='admin') renderAdminPage();
@@ -1230,36 +1492,47 @@ function showPage(pageId){
 
 // ===== RIDE CARD TEMPLATE =====
 function rideCardHTML(ride, showBook=true){
-  const stars = '★'.repeat(Math.floor(ride.rating))+'☆'.repeat(5-Math.floor(ride.rating));
+  const from = ride.from || ride.source || 'Unknown';
+  const to = ride.to || ride.destination || 'Unknown';
+  const date = ride.date || ride.travel_date || '2026-05-24';
+  const time = ride.time || '09:00 AM';
+  const driver = ride.driver || ride.driver_name || 'Unknown';
+  const car = ride.car || ride.car_model || 'Personal Car';
+  const rating = ride.rating || 4.5;
+  const reviews = ride.reviews || 0;
+  const avatar = ride.avatar || (driver || '').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  const tag = ride.tag || 'Verified';
+  const verified = ride.verified !== false;
+  const stars = '★'.repeat(Math.floor(rating))+'☆'.repeat(5-Math.floor(rating));
   const tagColors = {'Top Rated':'badge-purple','Budget Pick':'badge-green','Premium':'badge-gold','Smooth Drive':'badge-blue','New Driver':'badge-ghost'};
-  const tagClass = tagColors[ride.tag]||'badge-gold';
+  const tagClass = tagColors[tag]||'badge-gold';
   const seatDots = Array.from({length:4},(_,i)=>`<div class="seat-dot${i<ride.seats?'':' empty'}"></div>`).join('');
-  const verifiedLabel = ride.verified ? `<span class="badge badge-green" style="margin-left:10px">Verified</span>` : '';
+  const verifiedLabel = verified ? `<span class="badge badge-green" style="margin-left:10px">Verified</span>` : '';
   return `
   <div class="ride-card fade-in" onclick="openRide(${ride.id})">
     <div class="ride-header">
-      <div class="driver-avatar">${ride.avatar}</div>
+      <div class="driver-avatar">${avatar}</div>
       <div style="flex:1">
-        <div class="driver-name">${ride.driver}${ride.verified? ' · Verified Driver' : ''}</div>
-        <div class="driver-meta"><span class="stars">${stars}</span> ${ride.rating} · ${ride.reviews} reviews ${verifiedLabel}</div>
+        <div class="driver-name">${driver}${verified? ' · Verified Driver' : ''}</div>
+        <div class="driver-meta"><span class="stars">${stars}</span> ${rating} · ${reviews} reviews ${verifiedLabel}</div>
       </div>
-      <span class="badge ${tagClass}">${ride.tag}</span>
+      <span class="badge ${tagClass}">${tag}</span>
     </div>
     <div class="ride-route">
-      <div><div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">From</div><div class="route-city">${ride.from}</div></div>
+      <div><div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">From</div><div class="route-city">${from}</div></div>
       <div class="route-arrow">→</div>
-      <div style="text-align:right"><div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">To</div><div class="route-city">${ride.to}</div></div>
+      <div style="text-align:right"><div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">To</div><div class="route-city">${to}</div></div>
     </div>
     <div class="ride-meta-row">
-      <div class="ride-meta-item">📅 ${new Date(ride.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
-      <div class="ride-meta-item">🕐 ${ride.time}</div>
-      <div class="ride-meta-item">🚗 ${ride.car}</div>
+      <div class="ride-meta-item">📅 ${new Date(date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      <div class="ride-meta-item">🕐 ${time}</div>
+      <div class="ride-meta-item">🚗 ${car}</div>
     </div>
     <div class="ride-footer">
       <div>
         <div class="ride-price">₹${ride.price}<span>/seat</span></div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-          <div class="seats-dots">${seats}</div>
+          <div class="seats-dots">${seatDots}</div>
           <span style="font-size:12px;color:var(--text-muted)">${ride.seats} seat${ride.seats>1?'s':''} left</span>
         </div>
       </div>
@@ -1306,14 +1579,18 @@ function animateStats(){
 
 // ===== SEARCH & FILTER =====
 function filterRides(){
-  const from = document.getElementById('s-from')?.value.toLowerCase()||'';
-  const to   = document.getElementById('s-to')?.value.toLowerCase()||'';
+  const from = document.getElementById('s-from')?.value||'';
+  const to   = document.getElementById('s-to')?.value||'';
   const date = document.getElementById('s-date')?.value||'';
-  let filtered = [...ridesData];
-  if(from) filtered = filtered.filter(r=>r.from.toLowerCase().includes(from));
-  if(to)   filtered = filtered.filter(r=>r.to.toLowerCase().includes(to));
-  if(date) filtered = filtered.filter(r=>r.date===date);
-  applyChipFilter(filtered);
+  searchRidesAPI(from, to, date).then(rides=>{
+    ridesData = rides || [];
+    applyChipFilter(ridesData);
+  }).catch(err=>{
+    console.error('Search failed:', err);
+    showNotification('Failed to search rides','error');
+    ridesData = [];
+    renderSearchRides([]);
+  });
 }
 
 function setFilter(el,type){
@@ -1332,9 +1609,7 @@ function applyChipFilter(rides){
 }
 
 function sortRides(val){
-  const from = document.getElementById('s-from')?.value||'';
-  const to   = document.getElementById('s-to')?.value||'';
-  let r = from||to ? ridesData.filter(x=>(from?x.from.toLowerCase().includes(from.toLowerCase()):true)&&(to?x.to.toLowerCase().includes(to.toLowerCase()):true)) : [...RIDES_DB];
+  let r = [...ridesData];
   if(val==='price-asc') r.sort((a,b)=>a.price-b.price);
   else if(val==='price-desc') r.sort((a,b)=>b.price-a.price);
   else if(val==='rating') r.sort((a,b)=>b.rating-a.rating);
@@ -1364,26 +1639,54 @@ function bookRide(id){
 function renderBookingConfirm(){
   if(!selectedRide) return;
   const r = selectedRide;
+  const from = r.from || r.source || 'Unknown';
+  const to = r.to || r.destination || 'Unknown';
+  const date = r.date || r.travel_date || '2026-05-24';
+  const time = r.time || '09:00 AM';
+  const driver = r.driver || r.driver_name || 'Driver';
+  const car = r.car || r.car_model || 'Personal Car';
+  const rating = r.rating || 4.5;
+  const reviews = r.reviews || 0;
   document.getElementById('confirm-total-price').textContent = '₹'+r.price;
   document.getElementById('booking-details').innerHTML = `
-    <div class="detail-row"><span class="detail-key">Driver</span><span class="detail-val">${r.driver}</span></div>
-    <div class="detail-row"><span class="detail-key">Route</span><span class="detail-val">${r.from} → ${r.to}</span></div>
-    <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${new Date(r.date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'})}</span></div>
-    <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">${r.time}</span></div>
-    <div class="detail-row"><span class="detail-key">Car</span><span class="detail-val">${r.car}</span></div>
+    <div class="detail-row"><span class="detail-key">Driver</span><span class="detail-val">${driver}</span></div>
+    <div class="detail-row"><span class="detail-key">Route</span><span class="detail-val">${from} → ${to}</span></div>
+    <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${new Date(date).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'})}</span></div>
+    <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">${time}</span></div>
+    <div class="detail-row"><span class="detail-key">Car</span><span class="detail-val">${car}</span></div>
     <div class="detail-row"><span class="detail-key">Seats Available</span><span class="detail-val">${r.seats}</span></div>
-    <div class="detail-row"><span class="detail-key">Driver Rating</span><span class="detail-val">⭐ ${r.rating} (${r.reviews} reviews)</span></div>
+    <div class="detail-row"><span class="detail-key">Driver Rating</span><span class="detail-val">⭐ ${rating} (${reviews} reviews)</span></div>
   `;
 }
 
 function confirmBooking(){
-  const otp = String(Math.floor(100000 + Math.random()*900000));
-  MY_BOOKINGS.push({id:MY_BOOKINGS.length+1,from:selectedRide.from,to:selectedRide.to,date:selectedRide.date,status:'upcoming',price:selectedRide.price,driver:selectedRide.driver,otp,boardingVerified:false});
-  if(currentUser){ currentUser.rides++; currentUser.savings+=Math.floor(selectedRide.price*0.6); }
-  showNotification('✅ Ride booked successfully! Boarding OTP will be shared shortly.','success');
-  selectedRide=null;
-  showPage('dashboard');
-  switchTab('bookings');
+  if (!selectedRide || !currentUser) return;
+  bookRideAPI(selectedRide.id, currentUser.userId, currentUser.name)
+    .then(res => {
+      MY_BOOKINGS = MY_BOOKINGS.filter(booking => booking.ride_id !== selectedRide.id || booking.rider_id !== currentUser.userId).concat({
+        id: res.bookingId || MY_BOOKINGS.length + 1,
+        ride_id: selectedRide.id,
+        rider_id: currentUser.userId,
+        from: selectedRide.from || selectedRide.source,
+        to: selectedRide.to || selectedRide.destination,
+        date: selectedRide.date || selectedRide.travel_date,
+        status: 'upcoming',
+        price: selectedRide.price,
+        driver: selectedRide.driver || selectedRide.driver_name,
+        otp: String(Math.floor(100000 + Math.random()*900000)),
+        boardingVerified: false
+      });
+      if(currentUser){ currentUser.rides++; currentUser.savings+=Math.floor(selectedRide.price*0.6); }
+      showNotification('✅ Ride booked successfully!','success');
+      selectedRide = null;
+      getRidesAPI().then(rides=>{ ridesData = rides || []; });
+      showPage('dashboard');
+      switchTab('bookings');
+    })
+    .catch(err => {
+      console.error('Booking failed:', err);
+      showNotification('Failed to book ride: ' + (err.message || 'Unknown error'), 'error');
+    });
 }
 
 function trackRide(id){
@@ -1430,23 +1733,27 @@ function handleLogin(){
   const email=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
   if(!email||!pass){showNotification('Please fill all fields','error');return;}
-  const user = USERS.find(u=>u.email===email && u.password===pass);
-  if(!user){showNotification('Invalid credentials. Please check email and password.','error');return;}
-  setUser({...user});
-  if(user.role !== selectedRole){
-    showNotification(`Signed in as ${user.role}. Redirecting to the correct dashboard.`,'info');
-  }
-  if(user.role==='admin'){
-    showPage('admin');
-    return;
-  }
-  if(user.role==='driver' && !user.verified){
-    showPage('driver-onboard');
-    showNotification('Driver verification pending. Complete your application to publish rides.','warning');
-    return;
-  }
-  showPage('dashboard');
-  showNotification('Welcome back! Enjoy your rides ✨','success');
+  apiCall('/login','POST',{email, password: pass})
+    .then(user => {
+      const cachedUser = syncCurrentUser(user);
+      if(cachedUser.role !== selectedRole){
+        showNotification(`Signed in as ${cachedUser.role}. Redirecting to the correct dashboard.`,'info');
+      }
+      if(cachedUser.role==='admin'){
+        showPage('admin');
+        return;
+      }
+      if(cachedUser.role==='driver' && !cachedUser.verified){
+        showPage('driver-onboard');
+        showNotification('Driver verification pending. Complete your application to publish rides.','warning');
+        return;
+      }
+      showPage('dashboard');
+      showNotification('Welcome back! Enjoy your rides ✨','success');
+    })
+    .catch(err => {
+      showNotification(err.message || 'Invalid credentials. Please check email and password.','error');
+    });
 }
 
 function handleSignup(){
@@ -1457,7 +1764,7 @@ function handleSignup(){
   const pass=document.getElementById('signup-pass').value;
   if(!name||!email||!phone||!pass){showNotification('Please fill all fields','error');return;}
   if(pass.length<8){showNotification('Password must be at least 8 characters','error');return;}
-  if(USERS.some(u=>u.email===email)){showNotification('This email is already registered','error');return;}
+  
   const driverInfo = role==='driver' ? {
     license:document.getElementById('signup-license').value.trim(),
     vehicle:document.getElementById('signup-vehicle').value.trim(),
@@ -1467,31 +1774,28 @@ function handleSignup(){
     showNotification('Complete your driver credentials to register','error');
     return;
   }
-  const newUser = {
-    id: USERS.length+1,
+  apiCall('/register','POST',{
     name,
     email,
     password: pass,
     role,
-    verified: role==='driver' ? false : true,
-    verificationStatus: role==='driver' ? 'draft' : 'verified',
     phone,
+    city: 'Hyderabad',
     license: driverInfo.license || '',
     vehicle: driverInfo.vehicle || '',
-    insurance: driverInfo.insurance || '',
-    rides: 0,
-    savings: 0,
-    city:'Hyderabad'
-  };
-  USERS.push(newUser);
-  setUser({...newUser});
-  if(role==='driver'){
-    showPage('driver-onboard');
-    showNotification('Driver account created. Complete verification to start offering rides.','info');
-    return;
-  }
-  showPage('dashboard');
-  showNotification('Welcome to RideVogue! 🎉','success');
+    insurance: driverInfo.insurance || ''
+  })
+    .then(user => {
+      const cachedUser = syncCurrentUser(user);
+      if(role==='driver'){
+        showPage('driver-onboard');
+        showNotification('Driver account created. Complete verification to start offering rides.','info');
+        return;
+      }
+      showPage('dashboard');
+      showNotification('Welcome to RideVogue! 🎉','success');
+    })
+    .catch(err => showNotification(err.message || 'Registration failed','error'));
 }
 
 function handleGuestLogin(){
@@ -1558,9 +1862,23 @@ function submitDriverApplication(){
   currentUser.selfie = selfie;
   currentUser.verificationStatus = 'approved';
   currentUser.verified = true;
-  showNotification('✅ You are verified! Start posting rides now.','success');
-  renderDriverOnboard();
-  setTimeout(()=>showPage('post'), 500);
+  verifyDriverAPI({
+    user_id: currentUser.id,
+    license,
+    vehicle: currentUser.vehicle || 'Personal Car',
+    insurance
+})
+    .then(response => {
+      if (response.user) {
+        syncCurrentUser(response.user);
+      } else {
+        syncCurrentUser(currentUser);
+      }
+      showNotification('✅ You are verified! Start posting rides now.','success');
+      renderDriverOnboard();
+      setTimeout(()=>showPage('post'), 500);
+    })
+    .catch(err => showNotification(err.message || 'Driver verification failed','error'));
 }
 
 function renderAdminPage(){
@@ -1670,12 +1988,25 @@ function closeDriverVerifyModal(){
 
 function verifyDriverCredentials(){
   if(!currentUser) return;
-  currentUser.verified = true;
-  currentUser.verificationStatus = 'approved';
-  closeDriverVerifyModal();
-  const driverBanner = document.getElementById('driver-verification-banner');
-  if(driverBanner) driverBanner.style.display = 'none';
-  showNotification('Driver credentials verified. You can now publish rides.','success');
+  verifyDriverAPI({
+    user_id: currentUser.userId,
+    license: document.getElementById('verify-license').value.trim(),
+    vehicle: document.getElementById('verify-vehicle').value.trim(),
+    insurance: document.getElementById('verify-insurance').value.trim()
+  })
+    .then(response => {
+      if (response.user) {
+        syncCurrentUser(response.user);
+      } else {
+        currentUser.verified = true;
+        currentUser.verificationStatus = 'approved';
+      }
+      closeDriverVerifyModal();
+      const driverBanner = document.getElementById('driver-verification-banner');
+      if(driverBanner) driverBanner.style.display = 'none';
+      showNotification('Driver credentials verified. You can now publish rides.','success');
+    })
+    .catch(err => showNotification(err.message || 'Driver verification failed','error'));
 }
 
 // ===== DASHBOARD =====
@@ -1685,40 +2016,85 @@ function renderDashboard(){
   document.getElementById('sb-avatar').textContent=currentUser.avatar;
   document.getElementById('sb-name').textContent=currentUser.name;
   // Dash header
-  document.getElementById('dash-name').textContent=currentUser.name.split(' ')[0];
+  document.getElementById('dash-name').textContent=(currentUser.name||'').split(' ')[0];
   document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   // Metrics
   document.getElementById('m-rides').textContent=currentUser.rides;
   document.getElementById('m-savings').textContent='₹'+currentUser.savings.toLocaleString();
-  // Upcoming rides
-  const upcoming = MY_BOOKINGS.filter(b=>b.status==='upcoming');
-  document.getElementById('m-upcoming').textContent=upcoming.length;
-  const upcomingEl = document.getElementById('upcoming-rides-dash');
-  if(upcomingEl){
-    if(upcoming.length===0) upcomingEl.innerHTML='<div style="color:var(--text-muted);font-size:14px;padding:1rem 0">No upcoming rides. <span style="color:var(--gold);cursor:pointer" onclick="showPage(\'search\')">Find one →</span></div>';
-    else upcomingEl.innerHTML = upcoming.map(b=>`
-      <div class="card card-gold" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="font-weight:600">${b.from} → ${b.to}</div>
-          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">with ${b.driver} · ${b.date}</div>
+
+  // Fetch bookings from API
+  getMyBookingsAPI(currentUser.userId).then(bookings=>{
+    MY_BOOKINGS = bookings.map(booking => ({
+      ...booking,
+      ride_id: booking.ride_id,
+      id: booking.id,
+      otp: booking.otp || String(100000 + (Number(booking.id) % 900000)),
+      boardingVerified: booking.boardingVerified || false,
+      from: booking.source || booking.from,
+      to: booking.destination || booking.to,
+      driver: booking.driver_name || booking.driver,
+      date: booking.travel_date || booking.date
+    }));
+    const upcoming = bookings.filter(b=>b.status==='upcoming'||!b.status||b.status==='confirmed');
+    document.getElementById('m-upcoming').textContent=upcoming.length;
+    const upcomingEl = document.getElementById('upcoming-rides-dash');
+    if(upcomingEl){
+      if(upcoming.length===0) upcomingEl.innerHTML='<div style="color:var(--text-muted);font-size:14px;padding:1rem 0">No upcoming rides. <span style="color:var(--gold);cursor:pointer" onclick="showPage(\'search\')">Find one →</span></div>';
+      else upcomingEl.innerHTML = upcoming.map(b=>`
+        <div class="card card-gold" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-weight:600">${b.source||b.from} → ${b.destination||b.to}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">with ${b.driver_name||b.driver} · ${new Date(b.travel_date||b.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold)">₹${b.price}</div>
+            <span class="badge badge-green">Confirmed</span>
+          </div>
+        </div>`).join('');
+    }
+    // Bookings table
+    const tbody=document.getElementById('bookings-tbody');
+    if(tbody) tbody.innerHTML = bookings.map(b=>`
+      <tr>
+        <td><strong>${b.source||b.from} → ${b.destination||b.to}</strong></td>
+        <td>${new Date(b.travel_date||b.date).toLocaleDateString('en-IN',{day:'short',month:'short'})}</td>
+        <td>${b.driver_name||b.driver}</td>
+        <td style="font-weight:600">₹${b.price}</td>
+        <td><span class="badge ${(b.status==='upcoming'||b.status==='confirmed')?'badge-green':'badge-gold'}">${b.status||'confirmed'}</span></td>
+        <td>${(b.status==='upcoming'||b.status==='confirmed') ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="trackRide(${b.id})">Track</button><button class="btn btn-danger btn-sm" onclick="cancelRide(${b.id})">Cancel</button></div>` : `<span style="color:var(--text-muted);font-size:13px">Completed</span>`}</td>
+      </tr>`).join('');
+  }).catch(err=>{
+    console.error('Failed to fetch bookings:', err);
+    document.getElementById('bookings-tbody').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Failed to load bookings</td></tr>';
+  });
+
+  getMyRidesAPI(currentUser.userId).then(rides => {
+    const ridesList = document.getElementById('my-rides-list');
+    if (!ridesList) return;
+    if (!rides.length) {
+      ridesList.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:12px">🚗</div><div style="font-weight:600;margin-bottom:8px">No rides posted yet</div><div style="font-size:14px;margin-bottom:20px">Share your journey and earn while helping others travel</div><button class="btn btn-primary" onclick="showPage(\'post\')">Post a Ride</button></div>';
+      return;
+    }
+    ridesList.innerHTML = rides.map(ride => `
+      <div class="card card-hover" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:700;font-size:16px">${ride.from || ride.source} → ${ride.to || ride.destination}</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">${ride.date || ride.travel_date} · ${ride.time || ride.travel_time} · ${ride.car || ride.car_model}</div>
+          </div>
+          <span class="badge ${ride.status==='active'?'badge-green':'badge-gold'}">${ride.status || 'active'}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold)">₹${b.price}</div>
-          <span class="badge badge-green">Confirmed</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:12px;flex-wrap:wrap">
+          <div style="font-weight:600;color:var(--gold)">₹${ride.price}/seat · ${ride.seats} seats left</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('search')">View in Find Ride</button>
         </div>
-      </div>`).join('');
-  }
-  // Bookings table
-  const tbody=document.getElementById('bookings-tbody');
-  if(tbody) tbody.innerHTML = MY_BOOKINGS.map(b=>`
-    <tr>
-      <td><strong>${b.from} → ${b.to}</strong></td>
-      <td>${b.date}</td>
-      <td>${b.driver}</td>
-      <td style="font-weight:600">₹${b.price}</td>
-      <td><span class="badge ${b.status==='upcoming'?'badge-green':'badge-gold'}">${b.status}</span></td>
-      <td>${b.status==='upcoming' ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="trackRide(${b.id})">Track</button><button class="btn btn-danger btn-sm" onclick="cancelRide(${b.id})">Cancel</button></div>` : `<span style="color:var(--text-muted);font-size:13px">Completed</span>`}</td>
-    </tr>`).join('');
+      </div>
+    `).join('');
+  }).catch(() => {
+    const ridesList = document.getElementById('my-rides-list');
+    if (ridesList) ridesList.innerHTML = '<div style="color:var(--text-muted)">Failed to load your posted rides</div>';
+  });
+
   // Profile
   document.getElementById('profile-avatar-big').textContent=currentUser.avatar;
   document.getElementById('profile-name-big').textContent=currentUser.name;
@@ -1737,20 +2113,41 @@ function switchTab(tab){
 }
 
 function cancelRide(id){
-  const idx=MY_BOOKINGS.findIndex(b=>b.id===id);
-  if(idx>-1) MY_BOOKINGS[idx].status='cancelled';
-  renderDashboard();
-  showNotification('Ride cancelled successfully','info');
+  const booking = MY_BOOKINGS.find(entry => entry.id === id);
+  if (!booking) {
+    showNotification('Booking not found','error');
+    return;
+  }
+  cancelBookingAPI(booking.id, booking.ride_id)
+    .then(() => {
+      renderDashboard();
+      showNotification('Ride cancelled successfully','info');
+    })
+    .catch(err => showNotification(err.message || 'Failed to cancel booking','error'));
 }
 
 function saveProfile(){
   if(!currentUser) return;
-  currentUser.name=document.getElementById('profile-name-inp').value||currentUser.name;
-  currentUser.email=document.getElementById('profile-email-inp').value||currentUser.email;
-  currentUser.city=document.getElementById('profile-city-inp').value||currentUser.city;
-  renderDashboard();
-  document.getElementById('sb-name').textContent=currentUser.name;
-  showNotification('Profile updated successfully ✅','success');
+  const nextProfile = {
+    user_id: currentUser.userId,
+    name: document.getElementById('profile-name-inp').value || currentUser.name,
+    email: document.getElementById('profile-email-inp').value || currentUser.email,
+    city: document.getElementById('profile-city-inp').value || currentUser.city
+  };
+  updateProfileAPI(nextProfile)
+    .then(response => {
+      if (response.user) {
+        syncCurrentUser(response.user);
+      } else {
+        currentUser.name = nextProfile.name;
+        currentUser.email = nextProfile.email;
+        currentUser.city = nextProfile.city;
+      }
+      renderDashboard();
+      document.getElementById('sb-name').textContent=currentUser.name;
+      showNotification('Profile updated successfully ✅','success');
+    })
+    .catch(err => showNotification(err.message || 'Failed to update profile','error'));
 }
 
 // ===== POST RIDE =====
@@ -1807,27 +2204,31 @@ function submitRide(){
     openDriverVerifyModal();
     return;
   }
-  const newRide={
-    id:RIDES_DB.length+1,
-    driver:currentUser.name,
-    avatar:currentUser.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase(),
-    from:document.getElementById('p-from').value,
-    to:document.getElementById('p-to').value,
-    date:document.getElementById('p-date').value,
-    time:document.getElementById('p-time').value,
-    seats:parseInt(document.getElementById('p-seats').value),
-    price:parseInt(document.getElementById('p-price').value),
-    rating:5.0,
-    car:document.getElementById('p-car').value||'Personal Car',
-    reviews:0,
-    tag:'Verified driver'
+  const rideData = {
+    from: document.getElementById('p-from').value,
+    to: document.getElementById('p-to').value,
+    date: document.getElementById('p-date').value,
+    time: document.getElementById('p-time').value,
+    seats: parseInt(document.getElementById('p-seats').value),
+    price: parseInt(document.getElementById('p-price').value),
+    car: document.getElementById('p-car').value||'Personal Car'
   };
-  RIDES_DB.push(newRide);
-  ridesData = [...RIDES_DB];
-  showNotification('🚀 Your verified ride is now live!','success');
-  ['p-from','p-to','p-date','p-time','p-price','p-car','p-notes'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
-  postStep(1);
-  showPage('home');
+  postRideAPI(rideData)
+    .then(res => {
+      showNotification('🚀 Your verified ride is now live!','success');
+      ['p-from','p-to','p-date','p-time','p-price','p-car','p-notes'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+      postStep(1);
+      return getRidesAPI();
+    })
+    .then(rides => {
+      ridesData = rides || [];
+      applyChipFilter(ridesData);
+      showPage('search');
+    })
+    .catch(err => {
+      console.error('Failed to post ride:', err);
+      showNotification('Failed to publish ride: ' + (err.message || 'Unknown error'), 'error');
+    });
 }
 
 // ===== DARK MODE =====
@@ -1856,7 +2257,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   const today=new Date().toISOString().split('T')[0];
   document.querySelectorAll('input[type="date"]').forEach(d=>d.min=today);
 });
-
+loadBookings();
+loadDriverRides();
 
 
 
